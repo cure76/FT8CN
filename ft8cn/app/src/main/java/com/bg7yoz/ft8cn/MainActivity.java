@@ -28,6 +28,8 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -83,6 +85,41 @@ public class MainActivity extends AppCompatActivity {
     private FloatView floatView;
 
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
+
+    // --- Auto-update of QTH grid every 60 seconds (lastKnownLocation) ---
+    private static final long GRID_UPDATE_INTERVAL_MS = 60_000L;
+    private final Handler gridUpdateHandler = new Handler(Looper.getMainLooper());
+    private boolean gridAutoUpdateStarted = false;
+    private final Runnable gridUpdateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                String grid = MaidenheadGrid.getMyMaidenheadGrid(getApplicationContext());
+                if (!"".equals(grid) && !grid.equals(GeneralVariables.getMyMaidenheadGrid())) {
+                    GeneralVariables.setMyMaidenheadGrid(grid);
+                    if (mainViewModel != null && mainViewModel.databaseOpr != null) {
+                        mainViewModel.databaseOpr.writeConfig("grid", grid, null);
+                    }
+                }
+            } catch (Exception ignored) {
+            } finally {
+                if (gridAutoUpdateStarted) {
+                    gridUpdateHandler.postDelayed(this, GRID_UPDATE_INTERVAL_MS);
+                }
+            }
+        }
+    };
+
+    private void startGridAutoUpdateIfNeeded() {
+        if (gridAutoUpdateStarted) return;
+        gridAutoUpdateStarted = true;
+        gridUpdateHandler.post(gridUpdateRunnable);
+    }
+
+    private void stopGridAutoUpdate() {
+        gridAutoUpdateStarted = false;
+        gridUpdateHandler.removeCallbacksAndMessages(null);
+    }
 
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
@@ -489,6 +526,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 mainViewModel.ft8TransmitSignal.setTimer_sec(GeneralVariables.transmitDelay);
+                // start periodic lastKnown-based grid auto-update
+                startGridAutoUpdateIfNeeded();
                 //如果呼号、网格为空，就进入设置界面
                 if (GeneralVariables.getMyMaidenheadGrid().equals("")
                         || GeneralVariables.myCallsign.equals("")) {
@@ -747,6 +786,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        // stop periodic grid auto-update to avoid leaks
+        stopGridAutoUpdate();
         unregisterBluetoothReceiver();
         //保证屏幕方向切换后，不会因为对话框导致闪退
         if (Boolean.TRUE.equals(mainViewModel.mutableImportShareRunning.getValue())) {
