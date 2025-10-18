@@ -221,6 +221,93 @@
                             tools:ignore="TouchTargetSizeCheck" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
+                    <!-- Grid auto-update settings -->
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/gridAutoUpdateLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/editor_layout_style"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/freqConstraintLayout4">
+
+                        <TextView
+                            android:id="@+id/gridAutoUpdateText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/grid_autoupdate_title"
+                            android:textAlignment="textEnd"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toTopOf="@+id/gridAutoUpdateSwitch"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <Switch
+                            android:id="@+id/gridAutoUpdateSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginTop="4dp"
+                            android:checked="false"
+                            android:text="@string/grid_autoupdate_title"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            android:thumbTint="?attr/colorPrimary"
+                            android:thumbTintMode="multiply"
+                            android:trackTint="@color/button_start_color"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateText"
+                            app:layout_constraintTop_toBottomOf="@+id/gridAutoUpdateIntervalEdit"
+                            tools:ignore="TouchTargetSizeCheck,UseSwitchCompatOrMaterialXml" />
+
+                        <TextView
+                            android:id="@+id/gridAutoUpdateIntervalLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="@string/grid_autoupdate_interval"
+                            android:textAlignment="textEnd"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="@+id/gridAutoUpdateIntervalEdit"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateText"
+                            app:layout_constraintTop_toTopOf="@+id/gridAutoUpdateIntervalEdit" />
+
+                        <EditText
+                            android:id="@+id/gridAutoUpdateIntervalEdit"
+                            android:layout_width="60dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/editor_style"
+                            android:ems="2"
+                            android:hint="10"
+                            android:inputType="number"
+                            android:minHeight="32dp"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toTopOf="@+id/gridAutoUpdateSwitch"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateIntervalLabel"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <ImageButton
+                            android:id="@+id/gridAutoUpdateHelpImageButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/imagebutton_transparent_style"
+                            android:contentDescription="@string/help"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:srcCompat="@drawable/ic_baseline_info_32"
+                            tools:ignore="TouchTargetSizeCheck" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/utcDelayLayout"
                         android:layout_width="0dp"

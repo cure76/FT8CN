@@ -86,8 +86,8 @@ public class MainActivity extends AppCompatActivity {
 
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
 
-    // --- Auto-update of QTH grid every 60 seconds (lastKnownLocation) ---
-    private static final long GRID_UPDATE_INTERVAL_MS = 60_000L;
+    // --- Auto-update of QTH grid based on settings ---
+    private static final long GRID_UPDATE_INTERVAL_FALLBACK_MS = 600_000L; // 10 minutes
     private final Handler gridUpdateHandler = new Handler(Looper.getMainLooper());
     private boolean gridAutoUpdateStarted = false;
     private final Runnable gridUpdateRunnable = new Runnable() {
@@ -104,7 +104,10 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ignored) {
             } finally {
                 if (gridAutoUpdateStarted) {
-                    gridUpdateHandler.postDelayed(this, GRID_UPDATE_INTERVAL_MS);
+                    long minutes = GeneralVariables.gridAutoUpdateIntervalMin > 0
+                            ? GeneralVariables.gridAutoUpdateIntervalMin
+                            : 10;
+                    gridUpdateHandler.postDelayed(this, minutes * 60_000L);
                 }
             }
         }
@@ -112,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void startGridAutoUpdateIfNeeded() {
         if (gridAutoUpdateStarted) return;
+        if (!GeneralVariables.gridAutoUpdateEnabled) return;
         gridAutoUpdateStarted = true;
         gridUpdateHandler.post(gridUpdateRunnable);
     }
@@ -526,7 +530,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 mainViewModel.ft8TransmitSignal.setTimer_sec(GeneralVariables.transmitDelay);
-                // start periodic lastKnown-based grid auto-update
+                // start periodic lastKnown-based grid auto-update if enabled
                 startGridAutoUpdateIfNeeded();
                 //如果呼号、网格为空，就进入设置界面
                 if (GeneralVariables.getMyMaidenheadGrid().equals("")
@@ -798,6 +802,33 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onDestroy();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Observe runtime changes to settings to (re)schedule the updater
+        GeneralVariables.mutableGridAutoUpdateEnabled.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean enabled) {
+                if (enabled != null && enabled) {
+                    startGridAutoUpdateIfNeeded();
+                } else {
+                    stopGridAutoUpdate();
+                }
+            }
+        });
+
+        GeneralVariables.mutableGridAutoUpdateIntervalMin.observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer minutes) {
+                if (gridAutoUpdateStarted) {
+                    // reschedule based on new interval
+                    stopGridAutoUpdate();
+                    startGridAutoUpdateIfNeeded();
+                }
+            }
+        });
     }
 
 
