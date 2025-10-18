@@ -2067,6 +2067,16 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                 if (name.equalsIgnoreCase("grid")) {
                     GeneralVariables.setMyMaidenheadGrid(result);
                 }
+                if (name.equalsIgnoreCase("gridAutoUpdateEnabled")) {
+                    GeneralVariables.setGridAutoUpdateEnabled(!(result.equals("") || result.equals("0")));
+                }
+                if (name.equalsIgnoreCase("gridAutoUpdateMinutes")) {
+                    try {
+                        GeneralVariables.setGridAutoUpdateMinutes(Integer.parseInt(result));
+                    } catch (Exception ignored) {
+                        GeneralVariables.setGridAutoUpdateMinutes(10);
+                    }
+                }
                 if (name.equalsIgnoreCase("callsign")) {
                     GeneralVariables.myCallsign = result;
                     String callsign = GeneralVariables.myCallsign;

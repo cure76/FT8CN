@@ -150,6 +150,11 @@ public class GeneralVariables {
     public static final int DEFAULT_LAUNCH_SUPERVISION = 10 * 60 * 1000;//发射监管默认值,10分钟
     private static String myMaidenheadGrid = "";
     public static MutableLiveData<String> mutableMyMaidenheadGrid = new MutableLiveData<>();
+    // Grid auto-update settings (UI-configurable)
+    public static boolean gridAutoUpdateEnabled = false;
+    public static MutableLiveData<Boolean> mutableGridAutoUpdateEnabled = new MutableLiveData<>();
+    public static int gridAutoUpdateMinutes = 10; // default 10 minutes
+    public static MutableLiveData<Integer> mutableGridAutoUpdateMinutes = new MutableLiveData<>();
 
     public static int connectMode = ConnectMode.USB_CABLE;//连接方式USB==0,BLUE_TOOTH==1
 
@@ -344,6 +349,17 @@ public class GeneralVariables {
             return myMaidenheadGrid.substring(0, 4);
         }
         return myMaidenheadGrid;
+    }
+
+    public static void setGridAutoUpdateEnabled(boolean enabled) {
+        gridAutoUpdateEnabled = enabled;
+        mutableGridAutoUpdateEnabled.postValue(enabled);
+    }
+
+    public static void setGridAutoUpdateMinutes(int minutes) {
+        if (minutes <= 0) minutes = 10;
+        gridAutoUpdateMinutes = minutes;
+        mutableGridAutoUpdateMinutes.postValue(minutes);
     }
 
     /**

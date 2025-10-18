@@ -423,6 +423,39 @@ public class ConfigFragment extends Fragment {
         binding.inputMyGridEdit.setText(GeneralVariables.getMyMaidenheadGrid());
         binding.inputMyGridEdit.addTextChangedListener(onGridEditorChanged);
 
+        // Grid auto-update settings
+        binding.gridAutoUpdateSwitch.setChecked(GeneralVariables.gridAutoUpdateEnabled);
+        binding.gridAutoUpdateSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                GeneralVariables.setGridAutoUpdateEnabled(isChecked);
+                writeConfig("gridAutoUpdateEnabled", isChecked ? "1" : "0");
+            }
+        });
+        binding.gridAutoUpdateMinutesEdit.setText(String.valueOf(GeneralVariables.gridAutoUpdateMinutes));
+        binding.gridAutoUpdateMinutesEdit.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                int minutes = 10;
+                if (editable.toString().matches("^\\d{1,2}$")) {
+                    try {
+                        minutes = Integer.parseInt(editable.toString());
+                    } catch (Exception ignored) {
+                        minutes = 10;
+                    }
+                    if (minutes <= 0) minutes = 10;
+                }
+                GeneralVariables.setGridAutoUpdateMinutes(minutes);
+                writeConfig("gridAutoUpdateMinutes", String.valueOf(minutes));
+            }
+        });
+
         //我的呼号
         binding.inputMycallEdit.removeTextChangedListener(onMyCallEditorChanged);
         binding.inputMycallEdit.setText(GeneralVariables.myCallsign);

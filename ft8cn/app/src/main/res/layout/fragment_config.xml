@@ -221,6 +221,71 @@
                             tools:ignore="TouchTargetSizeCheck" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
+                    <!-- Grid auto-update settings -->
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/gridAutoUpdateConstraintLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/editor_layout_style"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/freqConstraintLayout4">
+
+                        <TextView
+                            android:id="@+id/gridAutoUpdateTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Grid Square autoupdate"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="@+id/gridAutoUpdateSwitch"
+                            app:layout_constraintEnd_toStartOf="@+id/gridAutoUpdateSwitch"
+                            app:layout_constraintHorizontal_bias="0.0"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="@+id/gridAutoUpdateSwitch" />
+
+                        <Switch
+                            android:id="@+id/gridAutoUpdateSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Enable"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateTitle"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/gridAutoUpdateMinutesText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:text="Minutes"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateSwitch"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <EditText
+                            android:id="@+id/gridAutoUpdateMinutesEdit"
+                            android:layout_width="50dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/editor_style"
+                            android:ems="2"
+                            android:hint="10"
+                            android:inputType="number"
+                            android:minHeight="32dp"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateMinutesText"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/utcDelayLayout"
                         android:layout_width="0dp"

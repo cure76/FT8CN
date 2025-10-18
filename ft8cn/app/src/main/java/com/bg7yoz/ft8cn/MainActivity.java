@@ -87,7 +87,10 @@ public class MainActivity extends AppCompatActivity {
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
 
     // --- Auto-update of QTH grid every 60 seconds (lastKnownLocation) ---
-    private static final long GRID_UPDATE_INTERVAL_MS = 60_000L;
+    private long getGridUpdateIntervalMs() {
+        int minutes = GeneralVariables.gridAutoUpdateMinutes > 0 ? GeneralVariables.gridAutoUpdateMinutes : 10;
+        return minutes * 60_000L;
+    }
     private final Handler gridUpdateHandler = new Handler(Looper.getMainLooper());
     private boolean gridAutoUpdateStarted = false;
     private final Runnable gridUpdateRunnable = new Runnable() {
@@ -103,8 +106,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) {
             } finally {
-                if (gridAutoUpdateStarted) {
-                    gridUpdateHandler.postDelayed(this, GRID_UPDATE_INTERVAL_MS);
+                if (gridAutoUpdateStarted && GeneralVariables.gridAutoUpdateEnabled) {
+                    gridUpdateHandler.postDelayed(this, getGridUpdateIntervalMs());
                 }
             }
         }
@@ -112,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void startGridAutoUpdateIfNeeded() {
         if (gridAutoUpdateStarted) return;
+        if (!GeneralVariables.gridAutoUpdateEnabled) return;
         gridAutoUpdateStarted = true;
         gridUpdateHandler.post(gridUpdateRunnable);
     }
@@ -159,6 +163,25 @@ public class MainActivity extends AppCompatActivity {
                 , WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onCreate(savedInstanceState);
         GeneralVariables.getInstance().setMainContext(getApplicationContext());
+        // React to runtime changes of auto-update settings
+        GeneralVariables.mutableGridAutoUpdateEnabled.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean enabled) {
+                stopGridAutoUpdate();
+                if (enabled != null && enabled) {
+                    startGridAutoUpdateIfNeeded();
+                }
+            }
+        });
+        GeneralVariables.mutableGridAutoUpdateMinutes.observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer minutes) {
+                if (gridAutoUpdateStarted && GeneralVariables.gridAutoUpdateEnabled) {
+                    stopGridAutoUpdate();
+                    startGridAutoUpdateIfNeeded();
+                }
+            }
+        });
 
         //判断是不是简体中文
         GeneralVariables.isTraditionalChinese =
