@@ -23,6 +23,9 @@
     <string name="pl_mycall">Please enter callsign</string>
     <string name="headGrid">Grid square</string>
     <string name="pl_grid">Please enter Maidenhead grid</string>
+    <string name="grid_autoupdate_title">Grid Square autoupdate</string>
+    <string name="grid_autoupdate_interval">Interval (mins)</string>
+    <string name="grid_autoupdate_help">If enabled, app periodically updates your grid from last known location. Default every 10 minutes.</string>
     <string name="decoding">Decoding…</string>
     <string name="send">TX</string>
     <string name="check">Check</string>

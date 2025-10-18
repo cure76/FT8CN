@@ -151,6 +151,22 @@ public class GeneralVariables {
     private static String myMaidenheadGrid = "";
     public static MutableLiveData<String> mutableMyMaidenheadGrid = new MutableLiveData<>();
 
+    // Grid auto-update settings
+    public static boolean gridAutoUpdateEnabled = false; // 是否启用自动更新我的网格
+    public static int gridAutoUpdateIntervalMin = 10; // 自动更新间隔（分钟），默认10
+    public static MutableLiveData<Boolean> mutableGridAutoUpdateEnabled = new MutableLiveData<>();
+    public static MutableLiveData<Integer> mutableGridAutoUpdateIntervalMin = new MutableLiveData<>();
+
+    public static void setGridAutoUpdateEnabled(boolean enabled) {
+        gridAutoUpdateEnabled = enabled;
+        mutableGridAutoUpdateEnabled.postValue(enabled);
+    }
+
+    public static void setGridAutoUpdateIntervalMin(int minutes) {
+        gridAutoUpdateIntervalMin = minutes;
+        mutableGridAutoUpdateIntervalMin.postValue(minutes);
+    }
+
     public static int connectMode = ConnectMode.USB_CABLE;//连接方式USB==0,BLUE_TOOTH==1
 
     //public static String bluetoothDeviceAddress=null;//可以用于连接的蓝牙设备地址

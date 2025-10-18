@@ -423,6 +423,48 @@ public class ConfigFragment extends Fragment {
         binding.inputMyGridEdit.setText(GeneralVariables.getMyMaidenheadGrid());
         binding.inputMyGridEdit.addTextChangedListener(onGridEditorChanged);
 
+        // Grid auto-update settings
+        binding.gridAutoUpdateSwitch.setOnCheckedChangeListener(null);
+        binding.gridAutoUpdateSwitch.setChecked(GeneralVariables.gridAutoUpdateEnabled);
+        binding.gridAutoUpdateSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                GeneralVariables.setGridAutoUpdateEnabled(isChecked);
+                mainViewModel.databaseOpr.writeConfig("gridAutoUpdateEnabled", isChecked ? "1" : "0", null);
+            }
+        });
+        binding.gridAutoUpdateIntervalEdit.setText(String.valueOf(GeneralVariables.gridAutoUpdateIntervalMin));
+        binding.gridAutoUpdateIntervalEdit.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                int minutes = 10;
+                try {
+                    String text = editable.toString().trim();
+                    if (text.matches("^\\d{1,2}$")) {
+                        minutes = Integer.parseInt(text);
+                    }
+                } catch (Exception ignored) { }
+                if (minutes <= 0) minutes = 1;
+                if (minutes > 99) minutes = 99;
+                GeneralVariables.setGridAutoUpdateIntervalMin(minutes);
+                mainViewModel.databaseOpr.writeConfig("gridAutoUpdateIntervalMin", String.valueOf(minutes), null);
+            }
+        });
+        binding.gridAutoUpdateHelpImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new HelpDialog(requireContext(), requireActivity()
+                        , GeneralVariables.getStringFromResource(R.string.grid_autoupdate_help)
+                        , true).show();
+            }
+        });
+
         //我的呼号
         binding.inputMycallEdit.removeTextChangedListener(onMyCallEditorChanged);
         binding.inputMycallEdit.setText(GeneralVariables.myCallsign);
