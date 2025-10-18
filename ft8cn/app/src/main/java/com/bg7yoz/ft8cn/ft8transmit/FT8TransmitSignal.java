@@ -59,6 +59,8 @@ public class FT8TransmitSignal {
     private long messageStartTime = 0;//消息开始的时间
     private long messageEndTime = 0;//消息结束的时间
     private String toMaidenheadGrid = "";//目标的网格信息
+    // 在通联开始时固定我的完整梅登海德网格，用于日志
+    private String myMaidenGridAtStart = "";
     private int sendReport = 0;//我发送到对方的报告
     private int sentTargetReport = -100;//
 
@@ -513,11 +515,14 @@ public class FT8TransmitSignal {
 
         messageEndTime = UtcTimer.getSystemTime();
         if (onDoTransmitted != null) {//用于保存通联记录
+            String myGridForLog = (myMaidenGridAtStart != null && !myMaidenGridAtStart.isEmpty())
+                    ? myMaidenGridAtStart
+                    : GeneralVariables.getMyMaidenheadGrid();
             onTransmitSuccess.doAfterTransmit(new QSLRecord(
                     messageStartTime,
                     messageEndTime,
                     GeneralVariables.myCallsign,
-                    GeneralVariables.getMyMaidenhead4Grid(),
+                    myGridForLog,
                     toCallsign.callsign,
                     toMaidenheadGrid,
                     sentTargetReport != -100 ? sentTargetReport : sendReport,
@@ -996,6 +1001,7 @@ public class FT8TransmitSignal {
     public void resetTargetReport() {
         receiveTargetReport = -100;
         sentTargetReport = -100;
+        myMaidenGridAtStart = "";
     }
 
     /**
@@ -1057,9 +1063,13 @@ public class FT8TransmitSignal {
             //todo 此处可能要修改，维护一个列表。把每个呼号，网格，时间，波段，记录下来
             if (transmitSignal.functionOrder == 1 || transmitSignal.functionOrder == 2) {//当消息处于1或2时，说明开始了通联
                 transmitSignal.messageStartTime = UtcTimer.getSystemTime();
+                transmitSignal.myMaidenGridAtStart = GeneralVariables.getMyMaidenheadGrid();
             }
             if (transmitSignal.messageStartTime == 0) {//如果起始时间没有，就取现在的
                 transmitSignal.messageStartTime = UtcTimer.getSystemTime();
+                if (transmitSignal.myMaidenGridAtStart == null || transmitSignal.myMaidenGridAtStart.isEmpty()) {
+                    transmitSignal.myMaidenGridAtStart = GeneralVariables.getMyMaidenheadGrid();
+                }
             }
 
             //用于显示将要发射的消息内容
