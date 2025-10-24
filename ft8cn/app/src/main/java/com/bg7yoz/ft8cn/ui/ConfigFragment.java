@@ -57,6 +57,7 @@ public class ConfigFragment extends Fragment {
     private LaunchSupervisionSpinnerAdapter launchSupervisionSpinnerAdapter;
     private PttDelaySpinnerAdapter pttDelaySpinnerAdapter;
     private NoReplyLimitSpinnerAdapter noReplyLimitSpinnerAdapter;
+    private GridAutoUpdateIntervalSpinnerAdapter gridAutoUpdateIntervalSpinnerAdapter;
     //private SerialPortSpinnerAdapter serialPortSpinnerAdapter;
 
     public ConfigFragment() {
@@ -391,6 +392,9 @@ public class ConfigFragment extends Fragment {
 
         //设置无回应次数中断
         setNoReplyLimitSpinner();
+
+        //设置网格自动更新间隔
+        setGridAutoUpdateIntervalSpinner();
 
         //设置各个spinner的OnItemSelected事件
         setSpinnerOnItemSelected();
@@ -839,6 +843,19 @@ public class ConfigFragment extends Fragment {
                     }
                 });
 
+                binding.gridAutoUpdateIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        GeneralVariables.gridAutoUpdateIntervalMin = gridAutoUpdateIntervalSpinnerAdapter.getValue(i);
+                        writeConfig("gridAutoUpdateIntervalMin", String.valueOf(GeneralVariables.gridAutoUpdateIntervalMin));
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
+
             }
         }, 1000);
     }
@@ -1088,7 +1105,21 @@ public class ConfigFragment extends Fragment {
             }
         });
 
+    }
 
+    /**
+     * 设置网格自动更新间隔
+     */
+    private void setGridAutoUpdateIntervalSpinner() {
+        gridAutoUpdateIntervalSpinnerAdapter = new GridAutoUpdateIntervalSpinnerAdapter(requireContext());
+        binding.gridAutoUpdateIntervalSpinner.setAdapter(gridAutoUpdateIntervalSpinnerAdapter);
+        requireActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                binding.gridAutoUpdateIntervalSpinner.setSelection(
+                        gridAutoUpdateIntervalSpinnerAdapter.getPosition(GeneralVariables.gridAutoUpdateIntervalMin));
+            }
+        });
     }
 
 

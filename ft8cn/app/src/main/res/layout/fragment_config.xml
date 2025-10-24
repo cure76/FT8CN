@@ -141,6 +141,33 @@
                             app:layout_constraintTop_toTopOf="parent"
                             app:srcCompat="@drawable/ic_baseline_info_32"
                             tools:ignore="DuplicateSpeakableTextCheck,DuplicateSpeakableTextCheck,TouchTargetSizeCheck" />
+
+                        <TextView
+                            android:id="@+id/gridAutoUpdateIntervalTextView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/grid_autoupdate_interval"
+                            android:textAlignment="textEnd"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="@+id/gridAutoUpdateIntervalSpinner"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/inputMyGridEdit" />
+
+                        <Spinner
+                            android:id="@+id/gridAutoUpdateIntervalSpinner"
+                            android:layout_width="100dp"
+                            android:layout_height="32dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="6dp"
+                            android:background="@drawable/editor_style"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateIntervalTextView"
+                            app:layout_constraintTop_toBottomOf="@+id/inputMyGridEdit" />
+
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout

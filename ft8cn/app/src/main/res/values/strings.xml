@@ -23,6 +23,13 @@
     <string name="pl_mycall">Please enter callsign</string>
     <string name="headGrid">Grid square</string>
     <string name="pl_grid">Please enter Maidenhead grid</string>
+    <string name="grid_autoupdate_interval">Auto-update interval</string>
+    <string name="grid_autoupdate_disabled">Disabled</string>
+    <string name="grid_autoupdate_1min">1 min</string>
+    <string name="grid_autoupdate_2min">2 min</string>
+    <string name="grid_autoupdate_3min">3 min</string>
+    <string name="grid_autoupdate_4min">4 min</string>
+    <string name="grid_autoupdate_5min">5 min</string>
     <string name="decoding">Decoding…</string>
     <string name="send">TX</string>
     <string name="check">Check</string>
