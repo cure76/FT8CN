@@ -103,11 +103,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) {
             } finally {
-                if (gridAutoUpdateStarted) {
-                    long minutes = GeneralVariables.gridAutoUpdateIntervalMin > 0
-                            ? GeneralVariables.gridAutoUpdateIntervalMin
-                            : 10;
-                    gridUpdateHandler.postDelayed(this, minutes * 60_000L);
+                if (gridAutoUpdateStarted && GeneralVariables.gridAutoUpdateIntervalMin > 0) {
+                    gridUpdateHandler.postDelayed(this, GeneralVariables.gridAutoUpdateIntervalMin * 60_000L);
                 }
             }
         }
@@ -115,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void startGridAutoUpdateIfNeeded() {
         if (gridAutoUpdateStarted) return;
-        if (!GeneralVariables.gridAutoUpdateEnabled) return;
+        if (GeneralVariables.gridAutoUpdateIntervalMin <= 0) return;
         gridAutoUpdateStarted = true;
         gridUpdateHandler.post(gridUpdateRunnable);
     }
@@ -124,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
         gridAutoUpdateStarted = false;
         gridUpdateHandler.removeCallbacksAndMessages(null);
     }
-
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
             , Manifest.permission.ACCESS_COARSE_LOCATION
@@ -808,28 +804,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         // Observe runtime changes to settings to (re)schedule the updater
-        GeneralVariables.mutableGridAutoUpdateEnabled.observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean enabled) {
-                if (enabled != null && enabled) {
-                    startGridAutoUpdateIfNeeded();
-                } else {
-                    stopGridAutoUpdate();
-                }
-            }
-        });
-
         GeneralVariables.mutableGridAutoUpdateIntervalMin.observe(this, new Observer<Integer>() {
             @Override
             public void onChanged(Integer minutes) {
-                if (gridAutoUpdateStarted) {
-                    // reschedule based on new interval
-                    stopGridAutoUpdate();
-                    startGridAutoUpdateIfNeeded();
+                if (minutes != null) {
+                    if (minutes > 0) {
+                        // reschedule based on new interval
+                        stopGridAutoUpdate();
+                        startGridAutoUpdateIfNeeded();
+                    } else {
+                        // disable auto-update
+                        stopGridAutoUpdate();
+                    }
                 }
             }
         });
     }
-
 
 }

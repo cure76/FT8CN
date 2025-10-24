@@ -152,15 +152,8 @@ public class GeneralVariables {
     public static MutableLiveData<String> mutableMyMaidenheadGrid = new MutableLiveData<>();
 
     // Grid auto-update settings
-    public static boolean gridAutoUpdateEnabled = false; // 是否启用自动更新我的网格
-    public static int gridAutoUpdateIntervalMin = 10; // 自动更新间隔（分钟），默认10
-    public static MutableLiveData<Boolean> mutableGridAutoUpdateEnabled = new MutableLiveData<>();
+    public static int gridAutoUpdateIntervalMin = 0; // 自动更新间隔（分钟），0=禁用，默认0
     public static MutableLiveData<Integer> mutableGridAutoUpdateIntervalMin = new MutableLiveData<>();
-
-    public static void setGridAutoUpdateEnabled(boolean enabled) {
-        gridAutoUpdateEnabled = enabled;
-        mutableGridAutoUpdateEnabled.postValue(enabled);
-    }
 
     public static void setGridAutoUpdateIntervalMin(int minutes) {
         gridAutoUpdateIntervalMin = minutes;

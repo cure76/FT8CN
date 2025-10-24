@@ -2186,17 +2186,14 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.deepDecodeMode =result.equals("1");
                 }
                 // Grid auto-update
-                if (name.equalsIgnoreCase("gridAutoUpdateEnabled")) {
-                    GeneralVariables.gridAutoUpdateEnabled = result.equals("1");
-                }
                 if (name.equalsIgnoreCase("gridAutoUpdateIntervalMin")) {
                     try {
                         int min = Integer.parseInt(result);
-                        if (min <= 0) min = 1;
+                        if (min < 0) min = 0; // 0 = disabled
                         if (min > 99) min = 99;
                         GeneralVariables.gridAutoUpdateIntervalMin = min;
                     } catch (Exception e) {
-                        GeneralVariables.gridAutoUpdateIntervalMin = 10;
+                        GeneralVariables.gridAutoUpdateIntervalMin = 0; // default disabled
                     }
                 }
                 if (name.equalsIgnoreCase("dataBits")) {//串口数据位
