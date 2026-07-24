@@ -87,6 +87,13 @@ public class QSLRecord {
     public QSLRecord(long startTime, long endTime, String myCallsign, String myMaidenGrid
             , String toCallsign, String toMaidenGrid, int sendReport, int receivedReport
             , String mode, long bandFreq, int wavFrequency) {
+        this(startTime, endTime, myCallsign, myMaidenGrid, toCallsign, toMaidenGrid,
+                sendReport, receivedReport, mode, bandFreq, wavFrequency, "");
+    }
+
+    public QSLRecord(long startTime, long endTime, String myCallsign, String myMaidenGrid
+            , String toCallsign, String toMaidenGrid, int sendReport, int receivedReport
+            , String mode, long bandFreq, int wavFrequency, String myRdaCode) {
         //this.startTime = startTime;
         this.qso_date = UtcTimer.getYYYYMMDD(startTime);
         this.time_on = UtcTimer.getTimeHHMMSS(startTime);
@@ -106,9 +113,25 @@ public class QSLRecord {
         if (!myMaidenGrid.equals("") && !toMaidenGrid.equals("")) {
             distance = MaidenheadGrid.getDistStrEN(myMaidenGrid, toMaidenGrid);
         }
-        this.comment =
-                distance.equals("") ? "QSO by FT8CN"
-                        : String.format("Distance: %s, QSO by FT8CN", distance);
+        this.comment = buildComment(distance, myRdaCode);
+    }
+
+    /**
+     * Build ADIF COMMENT: optional Distance and RDA segments.
+     */
+    static String buildComment(String distance, String myRdaCode) {
+        boolean hasDist = distance != null && !distance.isEmpty();
+        boolean hasRda = myRdaCode != null && !myRdaCode.isEmpty();
+        if (hasDist && hasRda) {
+            return String.format("Distance: %s, RDA: %s, QSO by FT8CN", distance, myRdaCode);
+        }
+        if (hasDist) {
+            return String.format("Distance: %s, QSO by FT8CN", distance);
+        }
+        if (hasRda) {
+            return String.format("RDA: %s, QSO by FT8CN", myRdaCode);
+        }
+        return "QSO by FT8CN";
     }
 
     public void update(QSLRecord record) {

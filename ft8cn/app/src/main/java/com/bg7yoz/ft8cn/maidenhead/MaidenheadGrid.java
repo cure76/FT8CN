@@ -252,7 +252,7 @@ public class MaidenheadGrid {
         index = (int) tempNumber;            // 小写字母的索引
         buff.append(String.valueOf((char) (index + 'a')));//设置第五个字符
 
-        return buff.toString().substring(0, 4);
+        return buff.toString();
     }
 
     /**

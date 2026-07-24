@@ -57,7 +57,6 @@ public class ConfigFragment extends Fragment {
     private LaunchSupervisionSpinnerAdapter launchSupervisionSpinnerAdapter;
     private PttDelaySpinnerAdapter pttDelaySpinnerAdapter;
     private NoReplyLimitSpinnerAdapter noReplyLimitSpinnerAdapter;
-    private GridAutoUpdateIntervalSpinnerAdapter gridAutoUpdateIntervalSpinnerAdapter;
     //private SerialPortSpinnerAdapter serialPortSpinnerAdapter;
 
     public ConfigFragment() {
@@ -393,8 +392,8 @@ public class ConfigFragment extends Fragment {
         //设置无回应次数中断
         setNoReplyLimitSpinner();
 
-        //设置网格自动更新间隔
-        setGridAutoUpdateIntervalSpinner();
+        //网格自动更新（GPS）
+        setGridAutoUpdateSwitch();
 
         //设置各个spinner的OnItemSelected事件
         setSpinnerOnItemSelected();
@@ -843,19 +842,6 @@ public class ConfigFragment extends Fragment {
                     }
                 });
 
-                binding.gridAutoUpdateIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                        GeneralVariables.gridAutoUpdateIntervalMin = gridAutoUpdateIntervalSpinnerAdapter.getValue(i);
-                        writeConfig("gridAutoUpdateIntervalMin", String.valueOf(GeneralVariables.gridAutoUpdateIntervalMin));
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-
-                    }
-                });
-
             }
         }, 1000);
     }
@@ -1108,16 +1094,33 @@ public class ConfigFragment extends Fragment {
     }
 
     /**
-     * 设置网格自动更新间隔
+     * 设置网格自动更新（GPS 跟踪 6 字符 Maidenhead）
      */
-    private void setGridAutoUpdateIntervalSpinner() {
-        gridAutoUpdateIntervalSpinnerAdapter = new GridAutoUpdateIntervalSpinnerAdapter(requireContext());
-        binding.gridAutoUpdateIntervalSpinner.setAdapter(gridAutoUpdateIntervalSpinnerAdapter);
-        requireActivity().runOnUiThread(new Runnable() {
+    private void setGridAutoUpdateSwitch() {
+        binding.gridAutoUpdateSwitch.setOnCheckedChangeListener(null);
+        binding.gridAutoUpdateSwitch.setChecked(GeneralVariables.gridAutoUpdateEnabled);
+        binding.gridAutoUpdateSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void run() {
-                binding.gridAutoUpdateIntervalSpinner.setSelection(
-                        gridAutoUpdateIntervalSpinnerAdapter.getPosition(GeneralVariables.gridAutoUpdateIntervalMin));
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                GeneralVariables.setGridAutoUpdateEnabled(isChecked);
+                writeConfig("gridAutoUpdateEnabled", isChecked ? "1" : "0");
+                // Keep legacy key in sync so migration cannot re-enable after turn-off
+                writeConfig("gridAutoUpdateIntervalMin", isChecked ? "1" : "0");
+            }
+        });
+
+        // Keep grid field in sync when GPS tracking updates the locator
+        GeneralVariables.mutableMyMaidenheadGrid.observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String grid) {
+                if (grid == null) return;
+                if (binding.inputMyGridEdit.getText() != null
+                        && grid.equals(binding.inputMyGridEdit.getText().toString())) {
+                    return;
+                }
+                binding.inputMyGridEdit.removeTextChangedListener(onGridEditorChanged);
+                binding.inputMyGridEdit.setText(grid);
+                binding.inputMyGridEdit.addTextChangedListener(onGridEditorChanged);
             }
         });
     }

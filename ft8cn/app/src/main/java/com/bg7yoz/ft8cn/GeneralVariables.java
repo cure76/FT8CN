@@ -151,13 +151,63 @@ public class GeneralVariables {
     private static String myMaidenheadGrid = "";
     public static MutableLiveData<String> mutableMyMaidenheadGrid = new MutableLiveData<>();
 
-    // Grid auto-update settings
-    public static int gridAutoUpdateIntervalMin = 0; // 自动更新间隔（分钟），0=禁用，默认0
-    public static MutableLiveData<Integer> mutableGridAutoUpdateIntervalMin = new MutableLiveData<>();
+    // Grid auto-update (active GPS tracking for 6-char Maidenhead)
+    public static boolean gridAutoUpdateEnabled = false;
+    public static MutableLiveData<Boolean> mutableGridAutoUpdateEnabled = new MutableLiveData<>();
 
-    public static void setGridAutoUpdateIntervalMin(int minutes) {
-        gridAutoUpdateIntervalMin = minutes;
-        mutableGridAutoUpdateIntervalMin.postValue(minutes);
+    /** Last GPS fix while Auto grid is on (for RDA snapshot / UI). */
+    public static boolean hasLastKnownLocation = false;
+    public static double lastKnownLatitude = 0;
+    public static double lastKnownLongitude = 0;
+    public static String currentMyRdaCode = "";
+    public static MutableLiveData<String> mutableMyRdaCode = new MutableLiveData<>();
+
+    public static void setGridAutoUpdateEnabled(boolean enabled) {
+        gridAutoUpdateEnabled = enabled;
+        mutableGridAutoUpdateEnabled.postValue(enabled);
+        if (!enabled) {
+            clearLastKnownLocation();
+        } else {
+            refreshCurrentRda();
+        }
+    }
+
+    public static void setLastKnownLocation(double latitude, double longitude) {
+        lastKnownLatitude = latitude;
+        lastKnownLongitude = longitude;
+        hasLastKnownLocation = true;
+        refreshCurrentRda();
+    }
+
+    public static void clearLastKnownLocation() {
+        hasLastKnownLocation = false;
+        setCurrentMyRdaCode("");
+    }
+
+    /** Recompute current RDA from last GPS fix (Auto grid only). */
+    public static void refreshCurrentRda() {
+        if (!gridAutoUpdateEnabled || !hasLastKnownLocation) {
+            setCurrentMyRdaCode("");
+            return;
+        }
+        Context ctx = getMainContext();
+        if (ctx != null) {
+            com.bg7yoz.ft8cn.rda.RdaLookup.getInstance().ensureLoaded(ctx);
+        }
+        String code = com.bg7yoz.ft8cn.rda.RdaLookup.getInstance()
+                .lookup(lastKnownLatitude, lastKnownLongitude);
+        setCurrentMyRdaCode(code != null ? code : "");
+    }
+
+    private static void setCurrentMyRdaCode(String code) {
+        if (code == null) {
+            code = "";
+        }
+        if (code.equals(currentMyRdaCode)) {
+            return;
+        }
+        currentMyRdaCode = code;
+        mutableMyRdaCode.postValue(code);
     }
 
     public static int connectMode = ConnectMode.USB_CABLE;//连接方式USB==0,BLUE_TOOTH==1
@@ -743,7 +793,7 @@ public class GeneralVariables {
 //    public static void shareFile(Context context, File file, String title) {
 //        Intent sharingIntent = new Intent(Intent.ACTION_SEND);
 //        Uri fileUri = FileProvider.getUriForFile(context.getApplicationContext()
-//                , "com.bg7yoz.ft8cn.fileprovider", file);
+//                , context.getPackageName() + ".fileprovider", file);
 //        //sharingIntent.setType("application/octet-stream");
 //        sharingIntent.setType("text/plain");
 //        sharingIntent.putExtra(Intent.EXTRA_STREAM, fileUri);

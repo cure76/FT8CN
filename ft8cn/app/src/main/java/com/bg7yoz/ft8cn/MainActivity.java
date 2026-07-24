@@ -14,6 +14,7 @@ package com.bg7yoz.ft8cn;
 
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -86,40 +87,110 @@ public class MainActivity extends AppCompatActivity {
 
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
 
-    // --- Auto-update of QTH grid based on settings ---
-    private static final long GRID_UPDATE_INTERVAL_FALLBACK_MS = 600_000L; // 10 minutes
-    private final Handler gridUpdateHandler = new Handler(Looper.getMainLooper());
+    // --- Auto-update of QTH grid via active GPS (6-char Maidenhead) ---
+    private static final long GRID_GPS_MIN_TIME_MS = 30_000L; // 30 seconds
+    private static final float GRID_GPS_MIN_DISTANCE_M = 500f; // 500 meters
+    private android.location.LocationManager gridLocationManager;
     private boolean gridAutoUpdateStarted = false;
-    private final Runnable gridUpdateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                String grid = MaidenheadGrid.getMyMaidenheadGrid(getApplicationContext());
-                if (!"".equals(grid) && !grid.equals(GeneralVariables.getMyMaidenheadGrid())) {
-                    GeneralVariables.setMyMaidenheadGrid(grid);
-                    if (mainViewModel != null && mainViewModel.databaseOpr != null) {
-                        mainViewModel.databaseOpr.writeConfig("grid", grid, null);
-                    }
+    private final android.location.LocationListener gridLocationListener =
+            new android.location.LocationListener() {
+                @Override
+                public void onLocationChanged(@NonNull android.location.Location location) {
+                    applyGridFromLocation(location);
                 }
-            } catch (Exception ignored) {
-            } finally {
-                if (gridAutoUpdateStarted && GeneralVariables.gridAutoUpdateIntervalMin > 0) {
-                    gridUpdateHandler.postDelayed(this, GeneralVariables.gridAutoUpdateIntervalMin * 60_000L);
+
+                @Override
+                public void onProviderEnabled(@NonNull String provider) {
+                }
+
+                @Override
+                public void onProviderDisabled(@NonNull String provider) {
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+                }
+            };
+
+    private void applyGridFromLocation(android.location.Location location) {
+        if (location == null) return;
+        try {
+            GeneralVariables.setLastKnownLocation(location.getLatitude(), location.getLongitude());
+            String grid = MaidenheadGrid.getGridSquare(
+                    new com.google.android.gms.maps.model.LatLng(
+                            location.getLatitude(), location.getLongitude()));
+            if (!"".equals(grid) && !grid.equals(GeneralVariables.getMyMaidenheadGrid())) {
+                GeneralVariables.setMyMaidenheadGrid(grid);
+                if (mainViewModel != null && mainViewModel.databaseOpr != null) {
+                    mainViewModel.databaseOpr.writeConfig("grid", grid, null);
                 }
             }
+        } catch (Exception ignored) {
         }
-    };
+    }
 
+    @SuppressLint("MissingPermission")
     private void startGridAutoUpdateIfNeeded() {
         if (gridAutoUpdateStarted) return;
-        if (GeneralVariables.gridAutoUpdateIntervalMin <= 0) return;
+        if (!GeneralVariables.gridAutoUpdateEnabled) return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        if (gridLocationManager == null) {
+            gridLocationManager =
+                    (android.location.LocationManager) getSystemService(LOCATION_SERVICE);
+        }
+        if (gridLocationManager == null) return;
+
         gridAutoUpdateStarted = true;
-        gridUpdateHandler.post(gridUpdateRunnable);
+        // Seed from last known immediately, then listen for fresh fixes
+        try {
+            android.location.Location best = null;
+            for (String provider : gridLocationManager.getProviders(true)) {
+                android.location.Location l = gridLocationManager.getLastKnownLocation(provider);
+                if (l == null) continue;
+                if (best == null || l.getAccuracy() < best.getAccuracy()) {
+                    best = l;
+                }
+            }
+            applyGridFromLocation(best);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            if (gridLocationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
+                gridLocationManager.requestLocationUpdates(
+                        android.location.LocationManager.GPS_PROVIDER,
+                        GRID_GPS_MIN_TIME_MS,
+                        GRID_GPS_MIN_DISTANCE_M,
+                        gridLocationListener);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            if (gridLocationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)) {
+                gridLocationManager.requestLocationUpdates(
+                        android.location.LocationManager.NETWORK_PROVIDER,
+                        GRID_GPS_MIN_TIME_MS,
+                        GRID_GPS_MIN_DISTANCE_M,
+                        gridLocationListener);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void stopGridAutoUpdate() {
         gridAutoUpdateStarted = false;
-        gridUpdateHandler.removeCallbacksAndMessages(null);
+        if (gridLocationManager != null) {
+            try {
+                gridLocationManager.removeUpdates(gridLocationListener);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
@@ -159,6 +230,17 @@ public class MainActivity extends AppCompatActivity {
                 , WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onCreate(savedInstanceState);
         GeneralVariables.getInstance().setMainContext(getApplicationContext());
+        // Prefetch offline RDA polygons (pilot: Moscow + MO)
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    com.bg7yoz.ft8cn.rda.RdaLookup.getInstance()
+                            .ensureLoaded(getApplicationContext());
+                } catch (Exception ignored) {
+                }
+            }
+        }, "rda-load").start();
 
         //判断是不是简体中文
         GeneralVariables.isTraditionalChinese =
@@ -172,6 +254,18 @@ public class MainActivity extends AppCompatActivity {
         binding = MainActivityBinding.inflate(getLayoutInflater());
         binding.initDataLayout.setVisibility(View.VISIBLE);//显示LOG页面
         setContentView(binding.getRoot());
+
+        GeneralVariables.mutableGridAutoUpdateEnabled.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean enabled) {
+                if (Boolean.TRUE.equals(enabled)) {
+                    stopGridAutoUpdate();
+                    startGridAutoUpdateIfNeeded();
+                } else {
+                    stopGridAutoUpdate();
+                }
+            }
+        });
 
 
         ToastMessage.getInstance();
@@ -803,22 +897,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        // Observe runtime changes to settings to (re)schedule the updater
-        GeneralVariables.mutableGridAutoUpdateIntervalMin.observe(this, new Observer<Integer>() {
-            @Override
-            public void onChanged(Integer minutes) {
-                if (minutes != null) {
-                    if (minutes > 0) {
-                        // reschedule based on new interval
-                        stopGridAutoUpdate();
-                        startGridAutoUpdateIfNeeded();
-                    } else {
-                        // disable auto-update
-                        stopGridAutoUpdate();
-                    }
-                }
-            }
-        });
+        startGridAutoUpdateIfNeeded();
+    }
+
+    @Override
+    protected void onStop() {
+        stopGridAutoUpdate();
+        super.onStop();
     }
 
 }

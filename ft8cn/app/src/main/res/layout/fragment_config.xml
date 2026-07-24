@@ -129,6 +129,23 @@
                             app:layout_constraintTop_toTopOf="parent"
                             tools:ignore="TouchTargetSizeCheck" />
 
+                        <Switch
+                            android:id="@+id/gridAutoUpdateSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:checked="false"
+                            android:text="@string/grid_autoupdate"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            android:thumbTint="?attr/colorPrimary"
+                            android:thumbTintMode="multiply"
+                            android:trackTint="@color/button_start_color"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/configGetGridImageButton"
+                            app:layout_constraintTop_toTopOf="parent"
+                            tools:ignore="TouchTargetSizeCheck,UseSwitchCompatOrMaterialXml" />
+
                         <ImageButton
                             android:id="@+id/maidenGridImageButton"
                             android:layout_width="wrap_content"
@@ -141,32 +158,6 @@
                             app:layout_constraintTop_toTopOf="parent"
                             app:srcCompat="@drawable/ic_baseline_info_32"
                             tools:ignore="DuplicateSpeakableTextCheck,DuplicateSpeakableTextCheck,TouchTargetSizeCheck" />
-
-                        <TextView
-                            android:id="@+id/gridAutoUpdateIntervalTextView"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/grid_autoupdate_interval"
-                            android:textAlignment="textEnd"
-                            android:textColor="@color/text_view_color"
-                            android:textSize="14sp"
-                            app:layout_constraintBottom_toBottomOf="@+id/gridAutoUpdateIntervalSpinner"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/inputMyGridEdit" />
-
-                        <Spinner
-                            android:id="@+id/gridAutoUpdateIntervalSpinner"
-                            android:layout_width="100dp"
-                            android:layout_height="32dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_marginTop="4dp"
-                            android:layout_marginBottom="6dp"
-                            android:background="@drawable/editor_style"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintStart_toEndOf="@+id/gridAutoUpdateIntervalTextView"
-                            app:layout_constraintTop_toBottomOf="@+id/inputMyGridEdit" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -257,20 +248,7 @@
                         android:background="@drawable/editor_layout_style"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/freqConstraintLayout4">
-
-                        <TextView
-                            android:id="@+id/transDelayText"
-                            android:layout_width="75dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/tran_delay"
-                            android:textAlignment="textEnd"
-                            android:textColor="@color/text_view_color"
-                            android:textSize="14sp"
-                            app:layout_constraintBottom_toBottomOf="@+id/utcDelayLayout"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="@+id/utcDelayLayout" />
+                        app:layout_constraintTop_toBottomOf="@+id/freqConstraintLayout4">
 
                         <TextView
                             android:id="@+id/utcDelayText"
@@ -281,9 +259,9 @@
                             android:textAlignment="textEnd"
                             android:textColor="@color/text_view_color"
                             android:textSize="14sp"
-                            app:layout_constraintBottom_toBottomOf="@+id/utcDelayLayout"
+                            app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/transDelayText" />
+                            app:layout_constraintTop_toTopOf="parent" />
 
                         <Spinner
                             android:id="@+id/utcTimeOffsetSpinner"
@@ -820,7 +798,7 @@
                         android:background="@drawable/editor_layout_style"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/pttDelayLayout">
+                        app:layout_constraintTop_toBottomOf="@+id/transDelayLayout2">
 
                         <TextView
                             android:id="@+id/operationFreqText"
@@ -976,7 +954,20 @@
                         android:background="@drawable/editor_layout_style"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/freqConstraintLayout4">
+                        app:layout_constraintTop_toBottomOf="@+id/pttDelayLayout">
+
+                        <TextView
+                            android:id="@+id/transDelayText"
+                            android:layout_width="75dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/tran_delay"
+                            android:textAlignment="textEnd"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
 
                         <EditText
                             android:id="@+id/inputTransDelayEdit"
@@ -990,14 +981,12 @@
                             android:ems="10"
                             android:hint="@string/pl_trans_delay"
                             android:inputType="textPersonName|textCapCharacters"
-
                             android:minHeight="32dp"
                             android:textColor="@color/text_view_color"
                             android:textSize="14sp"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintStart_toEndOf="@+id/transDelayText"
                             app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintVertical_bias="0.0"
                             tools:ignore="TextContrastCheck,TouchTargetSizeCheck" />
 
                         <ImageButton

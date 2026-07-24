@@ -2185,15 +2185,17 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                 if (name.equalsIgnoreCase("deepMode")) {//是不是深度解码模式
                     GeneralVariables.deepDecodeMode =result.equals("1");
                 }
-                // Grid auto-update
+                // Grid auto-update (on/off). Migrate old interval key: >0 means enabled.
+                if (name.equalsIgnoreCase("gridAutoUpdateEnabled")) {
+                    GeneralVariables.gridAutoUpdateEnabled = result.equals("1");
+                }
                 if (name.equalsIgnoreCase("gridAutoUpdateIntervalMin")) {
                     try {
                         int min = Integer.parseInt(result);
-                        if (min < 0) min = 0; // 0 = disabled
-                        if (min > 99) min = 99;
-                        GeneralVariables.gridAutoUpdateIntervalMin = min;
-                    } catch (Exception e) {
-                        GeneralVariables.gridAutoUpdateIntervalMin = 0; // default disabled
+                        if (min > 0) {
+                            GeneralVariables.gridAutoUpdateEnabled = true;
+                        }
+                    } catch (Exception ignored) {
                     }
                 }
                 if (name.equalsIgnoreCase("dataBits")) {//串口数据位

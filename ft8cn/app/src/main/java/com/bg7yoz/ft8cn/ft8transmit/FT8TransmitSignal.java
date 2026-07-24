@@ -7,6 +7,7 @@ package com.bg7yoz.ft8cn.ft8transmit;
  */
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioTrack;
@@ -23,6 +24,7 @@ import com.bg7yoz.ft8cn.connector.ConnectMode;
 import com.bg7yoz.ft8cn.database.ControlMode;
 import com.bg7yoz.ft8cn.database.DatabaseOpr;
 import com.bg7yoz.ft8cn.log.QSLRecord;
+import com.bg7yoz.ft8cn.rda.RdaLookup;
 import com.bg7yoz.ft8cn.rigs.BaseRigOperation;
 import com.bg7yoz.ft8cn.timer.OnUtcTimer;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
@@ -61,6 +63,7 @@ public class FT8TransmitSignal {
     private String toMaidenheadGrid = "";//目标的网格信息
     // 在通联开始时固定我的完整梅登海德网格，用于日志
     private String myMaidenGridAtStart = "";
+    private String myRdaAtStart = "";
     private int sendReport = 0;//我发送到对方的报告
     private int sentTargetReport = -100;//
 
@@ -202,6 +205,9 @@ public class FT8TransmitSignal {
             , int functionOrder, String toMaidenheadGrid) {
 
         messageStartTime = 0;//复位起始的时间
+        // New target / new QSO attempt: drop previous location snapshot so it is
+        // taken again on the first TX (see DoTransmitRunnable).
+        clearQsoLocationSnapshot();
 
         Log.d(TAG, "准备发射数据...");
         if (GeneralVariables.checkFun1(toMaidenheadGrid)) {
@@ -515,9 +521,17 @@ public class FT8TransmitSignal {
 
         messageEndTime = UtcTimer.getSystemTime();
         if (onDoTransmitted != null) {//用于保存通联记录
+            // Fill any missing snapshot pieces without wiping an existing grid/RDA.
+            if (myMaidenGridAtStart == null || myMaidenGridAtStart.isEmpty()) {
+                myMaidenGridAtStart = GeneralVariables.getMyMaidenheadGrid();
+            }
+            if (myRdaAtStart == null || myRdaAtStart.isEmpty()) {
+                myRdaAtStart = snapshotMyRdaAtStart();
+            }
             String myGridForLog = (myMaidenGridAtStart != null && !myMaidenGridAtStart.isEmpty())
                     ? myMaidenGridAtStart
                     : GeneralVariables.getMyMaidenheadGrid();
+            String myRdaForLog = (myRdaAtStart != null) ? myRdaAtStart : "";
             onTransmitSuccess.doAfterTransmit(new QSLRecord(
                     messageStartTime,
                     messageEndTime,
@@ -529,7 +543,8 @@ public class FT8TransmitSignal {
                     receiveTargetReport != -100 ? receiveTargetReport : receivedReport,//如果给对方的信号报告是不是-100，就用发给对方的信号报告记录
                     "FT8",
                     GeneralVariables.band,
-                    Math.round(GeneralVariables.getBaseFrequency())
+                    Math.round(GeneralVariables.getBaseFrequency()),
+                    myRdaForLog
             ));
 
             GeneralVariables.addQSLCallsign(toCallsign.callsign);//把通联成功的呼号添加到列表中
@@ -766,7 +781,7 @@ public class FT8TransmitSignal {
                     messageStartTime,
                     messageEndTime,
                     GeneralVariables.myCallsign,
-                    GeneralVariables.getMyMaidenhead4Grid(),
+                    GeneralVariables.getMyMaidenheadGrid(),
                     toCallsign.callsign,
                     toMaidenheadGrid,
                     sentTargetReport != -100 ? sentTargetReport : sendReport,
@@ -998,10 +1013,42 @@ public class FT8TransmitSignal {
     /**
      * 把给对方的信号记录复位成-100；
      */
+    /**
+     * Reset only SNR report scratch values.
+     * Do NOT clear myMaidenGridAtStart / myRdaAtStart here — those are QSO-start
+     * snapshots and must survive message-1 rebuilds (getFunctionCommand(1),
+     * generateFun, setCurrentFunctionOrder(1)). Clearing them caused consecutive
+     * QSOs to lose RDA in COMMENT when the last TX before save was not order 2.
+     */
     public void resetTargetReport() {
         receiveTargetReport = -100;
         sentTargetReport = -100;
+    }
+
+    private void clearQsoLocationSnapshot() {
         myMaidenGridAtStart = "";
+        myRdaAtStart = "";
+    }
+
+    private static String snapshotMyRdaAtStart() {
+        if (!GeneralVariables.gridAutoUpdateEnabled || !GeneralVariables.hasLastKnownLocation) {
+            return "";
+        }
+        Context ctx = GeneralVariables.getMainContext();
+        if (ctx != null) {
+            RdaLookup.getInstance().ensureLoaded(ctx);
+        }
+        String code = RdaLookup.getInstance().lookup(
+                GeneralVariables.lastKnownLatitude, GeneralVariables.lastKnownLongitude);
+        return code != null ? code : "";
+    }
+
+    /**
+     * Take / refresh QSO-start location snapshot (grid + RDA).
+     */
+    private void captureQsoLocationSnapshot() {
+        myMaidenGridAtStart = GeneralVariables.getMyMaidenheadGrid();
+        myRdaAtStart = snapshotMyRdaAtStart();
     }
 
     /**
@@ -1061,14 +1108,18 @@ public class FT8TransmitSignal {
         @Override
         public void run() {
             //todo 此处可能要修改，维护一个列表。把每个呼号，网格，时间，波段，记录下来
-            if (transmitSignal.functionOrder == 1 || transmitSignal.functionOrder == 2) {//当消息处于1或2时，说明开始了通联
+            // Snapshot QTH/RDA at QSO start (order 1/2), or whenever start time was
+            // never set yet (late join at RR73 etc.). Do not rely on resetTargetReport
+            // to clear these — SNR reset must not wipe location.
+            if (transmitSignal.functionOrder == 1 || transmitSignal.functionOrder == 2) {
                 transmitSignal.messageStartTime = UtcTimer.getSystemTime();
-                transmitSignal.myMaidenGridAtStart = GeneralVariables.getMyMaidenheadGrid();
+                transmitSignal.captureQsoLocationSnapshot();
             }
             if (transmitSignal.messageStartTime == 0) {//如果起始时间没有，就取现在的
                 transmitSignal.messageStartTime = UtcTimer.getSystemTime();
-                if (transmitSignal.myMaidenGridAtStart == null || transmitSignal.myMaidenGridAtStart.isEmpty()) {
-                    transmitSignal.myMaidenGridAtStart = GeneralVariables.getMyMaidenheadGrid();
+                if (transmitSignal.myMaidenGridAtStart == null || transmitSignal.myMaidenGridAtStart.isEmpty()
+                        || transmitSignal.myRdaAtStart == null || transmitSignal.myRdaAtStart.isEmpty()) {
+                    transmitSignal.captureQsoLocationSnapshot();
                 }
             }
 

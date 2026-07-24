@@ -277,7 +277,7 @@ public class ShareLogs {
                 if (!isCancel) {
                     Intent sharingIntent = new Intent(Intent.ACTION_SEND);
                     Uri fileUri = FileProvider.getUriForFile(context.getApplicationContext()
-                            , "com.bg7yoz.ft8cn.fileprovider", file);
+                            , context.getPackageName() + ".fileprovider", file);
                     sharingIntent.setType("text/plain");
                     sharingIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
                     sharingIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);

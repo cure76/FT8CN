@@ -20,25 +20,12 @@
             android:layout_marginTop="1dp"
             android:layout_marginEnd="1dp"
             android:background="@color/purple_500"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="@+id/guideline22"
             app:layout_constraintTop_toTopOf="parent">
-
-
-            <TextView
-                android:id="@+id/timerTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/bar_text_view_color"
-                android:textSize="12sp"
-
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/setTransmitImageButton"
-                app:layout_constraintStart_toStartOf="@+id/guideline6"
-                app:layout_constraintTop_toBottomOf="@+id/toCallsignTextView"
-                tools:text="123456" />
-
 
             <ImageButton
                 android:id="@+id/clearMycallListImageButton"
@@ -52,54 +39,6 @@
                 app:srcCompat="@drawable/clear_calling_list_image_48"
                 tools:ignore="TouchTargetSizeCheck" />
 
-            <TextView
-                android:id="@+id/transmittingSequentialTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/bar_text_view_color"
-                android:textSize="12sp"
-
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/guideline6"
-                app:layout_constraintStart_toEndOf="@+id/clearMycallListImageButton"
-                app:layout_constraintTop_toBottomOf="@+id/baseFrequencyTextView"
-                tools:text="发射时序:0"
-                tools:visibility="visible" />
-
-            <TextView
-                android:id="@+id/toCallsignTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/bar_text_view_color"
-                android:textSize="12sp"
-                app:layout_constraintBottom_toTopOf="@+id/timerTextView"
-                app:layout_constraintEnd_toStartOf="@+id/guideline6"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/clearMycallListImageButton"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="BG7YOY" />
-
-            <androidx.constraintlayout.widget.Guideline
-                android:id="@+id/guideline6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                app:layout_constraintGuide_percent="0.5" />
-
-            <TextView
-                android:id="@+id/baseFrequencyTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/bar_text_view_color"
-                android:textSize="12sp"
-
-                app:layout_constraintBottom_toTopOf="@+id/transmittingSequentialTextView"
-                app:layout_constraintEnd_toStartOf="@+id/setTransmitImageButton"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="@+id/guideline6"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="发射频率:2000Hz" />
-
             <ImageButton
                 android:id="@+id/setTransmitImageButton"
                 android:layout_width="wrap_content"
@@ -111,6 +50,114 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:srcCompat="@drawable/ic_baseline_cancel_schedule_send_off"
                 tools:ignore="DuplicateSpeakableTextCheck,ImageContrastCheck,TouchTargetSizeCheck" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineCallingLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.38" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineCallingRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.62" />
+
+            <TextView
+                android:id="@+id/toCallsignTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toTopOf="@+id/transmittingSequentialTextView"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineCallingLeft"
+                app:layout_constraintStart_toEndOf="@+id/clearMycallListImageButton"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_chainStyle="packed"
+                tools:text="Target: CQ" />
+
+            <TextView
+                android:id="@+id/transmittingSequentialTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineCallingLeft"
+                app:layout_constraintStart_toEndOf="@+id/clearMycallListImageButton"
+                app:layout_constraintTop_toBottomOf="@+id/toCallsignTextView"
+                tools:text="Sequential: 1"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/myRdaTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:text="—"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toTopOf="@+id/myGridTextView"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineCallingRight"
+                app:layout_constraintStart_toStartOf="@+id/guidelineCallingLeft"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_chainStyle="packed"
+                tools:text="MO-52" />
+
+            <TextView
+                android:id="@+id/myGridTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:text="—"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineCallingRight"
+                app:layout_constraintStart_toStartOf="@+id/guidelineCallingLeft"
+                app:layout_constraintTop_toBottomOf="@+id/myRdaTextView"
+                tools:text="KO85xx" />
+
+            <TextView
+                android:id="@+id/baseFrequencyTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toTopOf="@+id/timerTextView"
+                app:layout_constraintEnd_toStartOf="@+id/setTransmitImageButton"
+                app:layout_constraintStart_toStartOf="@+id/guidelineCallingRight"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_chainStyle="packed"
+                tools:text="Freq: 2000Hz" />
+
+            <TextView
+                android:id="@+id/timerTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/setTransmitImageButton"
+                app:layout_constraintStart_toStartOf="@+id/guidelineCallingRight"
+                app:layout_constraintTop_toBottomOf="@+id/baseFrequencyTextView"
+                tools:text="12:34:56" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
 

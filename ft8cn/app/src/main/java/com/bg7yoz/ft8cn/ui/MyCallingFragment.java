@@ -62,6 +62,25 @@ public class MyCallingFragment extends Fragment {
     }
 
 
+    private void updateMyLocationLabels(String grid, String rda) {
+        if (binding == null) {
+            return;
+        }
+        String gridText = (grid == null || grid.isEmpty()) ? "—" : grid;
+        binding.myGridTextView.setText(gridText);
+
+        // RDA only meaningful with Auto grid + GPS; otherwise em dash
+        String rdaText;
+        if (!GeneralVariables.gridAutoUpdateEnabled
+                || rda == null
+                || rda.isEmpty()) {
+            rdaText = "—";
+        } else {
+            rdaText = rda;
+        }
+        binding.myRdaTextView.setText(rdaText);
+    }
+
     /**
      * 马上对发起者呼叫
      *
@@ -228,6 +247,27 @@ public class MyCallingFragment extends Fragment {
             }
         });
 
+        // Center toolbar: current RDA + Maidenhead
+        updateMyLocationLabels(GeneralVariables.getMyMaidenheadGrid(), GeneralVariables.currentMyRdaCode);
+        GeneralVariables.mutableMyMaidenheadGrid.observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String grid) {
+                updateMyLocationLabels(grid, GeneralVariables.currentMyRdaCode);
+            }
+        });
+        GeneralVariables.mutableMyRdaCode.observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String rda) {
+                updateMyLocationLabels(GeneralVariables.getMyMaidenheadGrid(), rda);
+            }
+        });
+        GeneralVariables.mutableGridAutoUpdateEnabled.observe(getViewLifecycleOwner(), new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean enabled) {
+                updateMyLocationLabels(GeneralVariables.getMyMaidenheadGrid(),
+                        GeneralVariables.currentMyRdaCode);
+            }
+        });
 
         //观察发射状态按钮的变化
         Observer<Boolean> transmittingObserver = new Observer<Boolean>() {
