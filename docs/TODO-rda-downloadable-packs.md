@@ -1,75 +1,27 @@
 # TODO: загрузка пакетов RDA из внешнего источника
 
-Статус: отложено (перспектива). Сейчас пакеты вшиты в APK (`assets/rda/`).
+Статус: **реализовано (MVP)** в FT8CN-RN3AOE.
 
 Дата фиксации: 2026-07-24  
-Ветка/форк: FT8CN-RN3AOE (`com.rn3aoe.ft8cn`)  
-Связано: `docs/superpowers/specs/2026-07-24-rda-comment-design.md`, `tools/rda/`
+Обновлено: 2026-07-26  
+Ветка/форк: FT8CN-RN3AOE (`com.rn3aoe.ft8cn`)
 
 ---
 
-## Зачем
+## Как работает
 
-Покрыть остальные районы РФ (~2790 кодов, ~89 префиксов) **без раздувания APK**.
+1. Каталог: [`rda-packs/catalog.json`](../../rda-packs/catalog.json) в этом репозитории  
+   URL: `https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/catalog.json`
+2. В APK вшит только `mo_moscow` (`assets/rda/`).
+3. Settings → **RDA packs**: Refresh / Download / Delete; лимит **3** скачанных пакета.
+4. Файлы в `filesDir/rda/` + `local_index.json`; SHA-256 из каталога.
+5. `RdaLookup` читает assets ∪ скачанное; после install/delete — `reload()`.
 
-Пользователь скачивает только нужные регионы (МО, Смоленск, …) с внешнего каталога; lookup остаётся офлайн после установки.
+Локальная копия для будущего отдельного репо: `/Users/cure/virtual/github/ft8cn-rda-packs` (push после создания `cure76/ft8cn-rda-packs` на GitHub).
 
----
+Публикация каталога:
 
-## Уже есть (задел)
-
-| Компонент | Состояние |
-|-----------|-----------|
-| Формат пакета | GeoJSON + `rda_code`, `index.json` со списком packs |
-| `RdaLookup` | Грузит все `enabled` packs из assets |
-| Пилотные данные в APK | `mo_moscow` (69), `sm_smolensk` (29) ≈ 1.4 MB |
-| Подготовка данных | `tools/rda/prepare_*.py` |
-
-Менять модель данных не нужно — меняется **источник файлов**: assets → локальный кэш после download.
-
----
-
-## Целевое поведение
-
-1. В APK (опционально) — минимальный набор «домашних» пакетов или только stub + встроенный index.
-2. Внешний манифест, например `https://…/rda/catalog.json`:
-   - id пакета, имя региона, файл, размер, версия, SHA-256, URL
-3. Settings: список регионов — не установлен / скачать / удалить / размер / версия.
-4. Файлы в app storage (`filesDir` / `getExternalFilesDir`), не в assets.
-5. `RdaLookup` читает: встроенные packs **и** скачанные; при конфликте id — приоритет скачанного/новее.
-6. QSO / COMMENT / UI локатора — без сети; сеть только для установки пакета.
-
----
-
-## Не делать в первой итерации download
-
-- Онлайн point-in-polygon / геокодинг в момент QSO  
-- Автоскачивание всех регионов РФ  
-- Платный стор пакетов  
-
----
-
-## Риски
-
-| Риск | Смягчение |
-|------|-----------|
-| Битый / подменённый файл | SHA-256 из манифеста |
-| Нет сети в поле | Офлайн lookup из уже скачанного |
-| Устаревание границ OSM/RDA | version в каталоге + «обновить пакет» |
-| Хостинг | GitHub Releases / Pages / свой CDN |
-
----
-
-## Порядок реализации (когда вернёмся)
-
-1. Каталог + локальный кэш + проверка hash  
-2. Settings: список установленных / доступных пакетов (информативно → download/delete)  
-3. Переключить `RdaLookup` на объединённый источник (assets ∪ cache)  
-4. Убрать или сократить вшитые пакеты в APK  
-5. Документация: как публиковать новый pack из `tools/rda/`
-
----
-
-## Связанные идеи UI
-
-- В Settings информативно показывать, какие районы/пакеты установлены (можно сделать раньше download, по `index.json` + кэшу).
+```bash
+python tools/rda/publish_catalog.py --packs-dir rda-packs \
+  --base-url 'https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/'
+```

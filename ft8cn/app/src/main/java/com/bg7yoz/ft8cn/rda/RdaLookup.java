@@ -7,18 +7,22 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
- * Offline RDA lookup from GeoJSON packs in assets/rda.
- * Pilot: Moscow + Moscow Oblast (MA-*, MO-*).
+ * Offline RDA lookup from GeoJSON packs in assets/rda and downloaded filesDir/rda.
+ * Built-in: Moscow + Moscow Oblast (MA-*, MO-*).
  */
 public final class RdaLookup {
     private static final String TAG = "RdaLookup";
@@ -38,7 +42,7 @@ public final class RdaLookup {
     private RdaLookup() {
     }
 
-    /** Load packs from assets once. Safe to call repeatedly. */
+    /** Load packs from assets + downloaded cache. Safe to call repeatedly. */
     public void ensureLoaded(Context context) {
         if (loaded) {
             return;
@@ -48,19 +52,46 @@ public final class RdaLookup {
                 return;
             }
             loadAttempted = true;
-            Context app = context.getApplicationContext();
-            try {
-                JSONObject index = new JSONObject(readAsset(app, INDEX_PATH));
-                JSONArray packs = index.optJSONArray("packs");
-                if (packs == null) {
-                    Log.w(TAG, "rda/index.json has no packs");
-                    loaded = true;
-                    return;
+            loadLocked(context.getApplicationContext());
+        }
+    }
+
+    /** Force reload after pack install/delete. */
+    public void reload(Context context) {
+        synchronized (lock) {
+            loaded = false;
+            loadAttempted = true;
+            features.clear();
+            loadLocked(context.getApplicationContext());
+        }
+    }
+
+    private void loadLocked(Context app) {
+        try {
+            List<RdaFeature> parsed = new ArrayList<>();
+            Set<String> downloadedIds = new HashSet<>();
+
+            // Downloaded packs first (priority over same id in assets).
+            for (RdaPackManager.InstalledPack inst : RdaPackManager.getInstalled(app)) {
+                File geo = new File(RdaPackManager.getRdaDir(app), inst.file);
+                if (!geo.isFile()) {
+                    Log.w(TAG, "Missing downloaded pack file: " + geo);
+                    continue;
                 }
-                List<RdaFeature> parsed = new ArrayList<>();
+                parseGeoJson(readFile(geo), parsed);
+                downloadedIds.add(inst.id);
+            }
+
+            JSONObject index = new JSONObject(readAsset(app, INDEX_PATH));
+            JSONArray packs = index.optJSONArray("packs");
+            if (packs != null) {
                 for (int i = 0; i < packs.length(); i++) {
                     JSONObject pack = packs.getJSONObject(i);
                     if (!pack.optBoolean("enabled", true)) {
+                        continue;
+                    }
+                    String id = pack.optString("id", "");
+                    if (!id.isEmpty() && downloadedIds.contains(id)) {
                         continue;
                     }
                     String file = pack.optString("file", "");
@@ -69,21 +100,27 @@ public final class RdaLookup {
                     }
                     parseGeoJson(readAsset(app, "rda/" + file), parsed);
                 }
-                // Smaller polygons first (town inside district).
-                Collections.sort(parsed, Comparator.comparingDouble(f -> f.bboxArea));
-                features.clear();
-                features.addAll(parsed);
-                loaded = true;
-                Log.i(TAG, "Loaded " + features.size() + " RDA polygons");
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to load RDA packs", e);
-                loaded = true;
             }
+
+            // Smaller polygons first (town inside district).
+            Collections.sort(parsed, Comparator.comparingDouble(f -> f.bboxArea));
+            features.clear();
+            features.addAll(parsed);
+            loaded = true;
+            Log.i(TAG, "Loaded " + features.size() + " RDA polygons"
+                    + " (downloaded=" + downloadedIds.size() + ")");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load RDA packs", e);
+            loaded = true;
         }
     }
 
     public boolean isReady() {
         return loaded && !features.isEmpty();
+    }
+
+    public int featureCount() {
+        return features.size();
     }
 
     /**
@@ -185,18 +222,31 @@ public final class RdaLookup {
     private static String readAsset(Context context, String path) throws Exception {
         InputStream in = context.getAssets().open(path);
         try {
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(in, StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(Math.max(1024, in.available()));
-            char[] buf = new char[8192];
-            int n;
-            while ((n = reader.read(buf)) >= 0) {
-                sb.append(buf, 0, n);
-            }
-            return sb.toString();
+            return readStream(in);
         } finally {
             in.close();
         }
+    }
+
+    private static String readFile(File file) throws Exception {
+        FileInputStream in = new FileInputStream(file);
+        try {
+            return readStream(in);
+        } finally {
+            in.close();
+        }
+    }
+
+    private static String readStream(InputStream in) throws Exception {
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(in, StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder(Math.max(1024, in.available()));
+        char[] buf = new char[8192];
+        int n;
+        while ((n = reader.read(buf)) >= 0) {
+            sb.append(buf, 0, n);
+        }
+        return sb.toString();
     }
 
     /** Ray-casting. Ring points are [lon, lat]. */

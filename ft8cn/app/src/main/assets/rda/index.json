@@ -5,11 +5,6 @@
       "id": "mo_moscow",
       "file": "mo_moscow.geojson",
       "enabled": true
-    },
-    {
-      "id": "sm_smolensk",
-      "file": "sm_smolensk.geojson",
-      "enabled": true
     }
   ]
 }

@@ -6,6 +6,7 @@ package com.bg7yoz.ft8cn.ui;
  */
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,7 +17,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -35,10 +39,13 @@ import com.bg7yoz.ft8cn.databinding.FragmentConfigBinding;
 import com.bg7yoz.ft8cn.ft8signal.FT8Package;
 import com.bg7yoz.ft8cn.log.ThirdPartyService;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
+import com.bg7yoz.ft8cn.rda.RdaPackManager;
 import com.bg7yoz.ft8cn.rigs.InstructionSet;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -58,6 +65,9 @@ public class ConfigFragment extends Fragment {
     private PttDelaySpinnerAdapter pttDelaySpinnerAdapter;
     private NoReplyLimitSpinnerAdapter noReplyLimitSpinnerAdapter;
     //private SerialPortSpinnerAdapter serialPortSpinnerAdapter;
+    private final ExecutorService rdaPackExecutor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private RdaPackManager.Catalog rdaCatalog;
 
     public ConfigFragment() {
         // Required empty public constructor
@@ -1119,6 +1129,8 @@ public class ConfigFragment extends Fragment {
             }
         });
 
+        setupRdaPacksUi();
+
         // Keep grid field in sync when GPS tracking updates the locator
         GeneralVariables.mutableMyMaidenheadGrid.observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
@@ -1375,6 +1387,215 @@ public class ConfigFragment extends Fragment {
      * @param KeyName 关键词
      * @param Value   值
      */
+    private void setupRdaPacksUi() {
+        binding.rdaPacksRefreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refreshRdaCatalog(true);
+            }
+        });
+        renderRdaPackRows();
+        refreshRdaCatalog(false);
+    }
+
+    private void refreshRdaCatalog(boolean showErrors) {
+        binding.rdaPacksRefreshButton.setEnabled(false);
+        rdaPackExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final RdaPackManager.Catalog catalog = RdaPackManager.fetchCatalog();
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            rdaCatalog = catalog;
+                            binding.rdaPacksRefreshButton.setEnabled(true);
+                            renderRdaPackRows();
+                        }
+                    });
+                } catch (final Exception e) {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            binding.rdaPacksRefreshButton.setEnabled(true);
+                            if (showErrors) {
+                                ToastMessage.show(String.format(
+                                        getString(R.string.rda_packs_catalog_fail),
+                                        e.getMessage() != null ? e.getMessage() : e.toString()));
+                            }
+                            renderRdaPackRows();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void renderRdaPackRows() {
+        LinearLayout list = binding.rdaPacksListLayout;
+        list.removeAllViews();
+        if (rdaCatalog == null) {
+            TextView hint = new TextView(requireContext());
+            hint.setTextColor(requireContext().getColor(R.color.text_view_color));
+            hint.setTextSize(12f);
+            hint.setText(getString(R.string.rda_packs_refresh));
+            list.addView(hint);
+            return;
+        }
+        for (final RdaPackManager.PackInfo pack : rdaCatalog.packs) {
+            if (pack.builtinInApk) {
+                continue;
+            }
+            LinearLayout row = new LinearLayout(requireContext());
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setPadding(0, 8, 0, 8);
+
+            LinearLayout texts = new LinearLayout(requireContext());
+            texts.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            texts.setLayoutParams(textLp);
+
+            TextView title = new TextView(requireContext());
+            title.setTextColor(requireContext().getColor(R.color.text_view_color));
+            title.setTextSize(13f);
+            long kb = Math.max(1, (pack.bytes + 1023) / 1024);
+            title.setText(pack.name + " (" + String.format(getString(R.string.rda_packs_size_kb), (int) kb) + ")");
+
+            TextView status = new TextView(requireContext());
+            status.setTextColor(requireContext().getColor(R.color.text_view_color));
+            status.setTextSize(12f);
+            final boolean installed = RdaPackManager.isInstalled(requireContext(), pack.id);
+            status.setText(installed
+                    ? getString(R.string.rda_packs_installed)
+                    : getString(R.string.rda_packs_not_installed));
+
+            texts.addView(title);
+            texts.addView(status);
+            row.addView(texts);
+
+            Button action = new Button(requireContext());
+            action.setTextSize(12f);
+            action.setMinHeight(36);
+            if (installed) {
+                action.setText(R.string.rda_packs_delete);
+                action.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        deleteRdaPack(pack.id);
+                    }
+                });
+            } else {
+                action.setText(R.string.rda_packs_download);
+                action.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        downloadRdaPack(pack);
+                    }
+                });
+            }
+            row.addView(action);
+            list.addView(row);
+        }
+    }
+
+    private void downloadRdaPack(final RdaPackManager.PackInfo pack) {
+        if (rdaCatalog == null) {
+            return;
+        }
+        if (!RdaPackManager.isInstalled(requireContext(), pack.id)
+                && RdaPackManager.downloadedCount(requireContext()) >= RdaPackManager.MAX_DOWNLOADED_PACKS) {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.rda_packs_limit_title)
+                    .setMessage(R.string.rda_packs_limit_message)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            return;
+        }
+        binding.rdaPacksRefreshButton.setEnabled(false);
+        final android.content.Context appCtx = requireContext().getApplicationContext();
+        final RdaPackManager.Catalog catalog = rdaCatalog;
+        rdaPackExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    RdaPackManager.installPack(appCtx, catalog, pack);
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            binding.rdaPacksRefreshButton.setEnabled(true);
+                            ToastMessage.show(getString(R.string.rda_packs_download_ok));
+                            renderRdaPackRows();
+                        }
+                    });
+                } catch (final RdaPackManager.PackLimitException e) {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            binding.rdaPacksRefreshButton.setEnabled(true);
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle(R.string.rda_packs_limit_title)
+                                    .setMessage(R.string.rda_packs_limit_message)
+                                    .setPositiveButton(android.R.string.ok, null)
+                                    .show();
+                            renderRdaPackRows();
+                        }
+                    });
+                } catch (final Exception e) {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            binding.rdaPacksRefreshButton.setEnabled(true);
+                            ToastMessage.show(String.format(
+                                    getString(R.string.rda_packs_download_fail),
+                                    e.getMessage() != null ? e.getMessage() : e.toString()));
+                            renderRdaPackRows();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private void deleteRdaPack(final String packId) {
+        final android.content.Context appCtx = requireContext().getApplicationContext();
+        rdaPackExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    RdaPackManager.deletePack(appCtx, packId);
+                } catch (Exception e) {
+                    // still refresh UI
+                }
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isAdded()) {
+                            return;
+                        }
+                        renderRdaPackRows();
+                    }
+                });
+            }
+        });
+    }
+
     private void writeConfig(String KeyName, String Value) {
         mainViewModel.databaseOpr.writeConfig(KeyName, Value, null);
     }

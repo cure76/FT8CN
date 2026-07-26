@@ -2,27 +2,36 @@
 
 ## Пакеты
 
-| Пакет | Коды | Скрипт | Покрытие |
-|-------|------|--------|----------|
-| `mo_moscow` | MA-* / MO-* | `prepare_rda_pack.py` | 69/69 |
-| `sm_smolensk` | SM-* | `prepare_sm_smolensk.py` | 29/29 |
+| Пакет | Коды | Скрипт | Где |
+|-------|------|--------|-----|
+| `mo_moscow` | MA-* / MO-* | `prepare_rda_pack.py` | APK assets + `rda-packs/` |
+| `sm_smolensk` | SM-* | `prepare_sm_smolensk.py` | только `rda-packs/` (скачивание) |
+
+## Каталог для приложения
+
+```bash
+python tools/rda/publish_catalog.py --packs-dir rda-packs \
+  --base-url 'https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/'
+```
+
+Скопируйте готовый `.geojson` в `rda-packs/packs/`, затем пересоберите `catalog.json`.
 
 ## Запуск (Смоленская область)
 
 ```bash
 cd tools/rda
 source .venv/bin/activate
-python prepare_sm_smolensk.py --merge-index ../../ft8cn/app/src/main/assets/rda
+python prepare_sm_smolensk.py
+# затем скопировать out/sm_smolensk.geojson → rda-packs/packs/ и publish_catalog.py
 ```
-
-Aliases: `aliases_sm_smolensk.json`. Город Смоленск — три района `admin_level=9` (SM-01..03); `городской округ Смоленск` целиком пропускается.
 
 ## Москва + МО
 
 ```bash
 python prepare_rda_pack.py
+# обновить assets/rda/mo_moscow.geojson и rda-packs/packs/mo_moscow.geojson
 ```
 
 Кэш: `tools/rda/cache/`.
 
-Приложение читает `assets/rda/index.json` и все `"enabled": true` пакеты.
+Приложение: builtin из `assets/rda/index.json`; остальные — Download в Settings.
