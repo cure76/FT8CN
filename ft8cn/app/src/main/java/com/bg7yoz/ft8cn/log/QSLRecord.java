@@ -5,7 +5,6 @@ import android.util.Log;
 import com.bg7yoz.ft8cn.Ft8Message;
 import com.bg7yoz.ft8cn.GeneralVariables;
 import com.bg7yoz.ft8cn.R;
-import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.rigs.BaseRigOperation;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 
@@ -109,29 +108,44 @@ public class QSLRecord {
         this.bandLength = BaseRigOperation.getMeterFromFreq(bandFreq);//获取波长
         this.bandFreq = bandFreq;
         this.wavFrequency = wavFrequency;
-        String distance = "";
-        if (!myMaidenGrid.equals("") && !toMaidenGrid.equals("")) {
-            distance = MaidenheadGrid.getDistStrEN(myMaidenGrid, toMaidenGrid);
-        }
-        this.comment = buildComment(distance, myRdaCode);
+        this.comment = buildComment(myCallsign, myMaidenGrid, myRdaCode);
     }
 
     /**
-     * Build ADIF COMMENT: optional Distance and RDA segments.
+     * ADIF COMMENT: {@code CALL [GRID] [RDA: XX-NN]} from settings callsign,
+     * QSO-start 6-char grid (if present), and RDA (if present).
+     * Example: {@code RN3AOE/M KO85EO RDA: MO-84}
      */
-    static String buildComment(String distance, String myRdaCode) {
-        boolean hasDist = distance != null && !distance.isEmpty();
-        boolean hasRda = myRdaCode != null && !myRdaCode.isEmpty();
-        if (hasDist && hasRda) {
-            return String.format("Distance: %s, RDA: %s, QSO by FT8CN", distance, myRdaCode);
+    static String buildComment(String myCallsign, String myMaidenGrid, String myRdaCode) {
+        StringBuilder sb = new StringBuilder();
+        if (myCallsign != null) {
+            String call = myCallsign.trim();
+            if (!call.isEmpty()) {
+                sb.append(call);
+            }
         }
-        if (hasDist) {
-            return String.format("Distance: %s, QSO by FT8CN", distance);
+        if (myMaidenGrid != null) {
+            String grid = myMaidenGrid.trim().toUpperCase();
+            if (grid.length() >= 6) {
+                if (grid.length() > 6) {
+                    grid = grid.substring(0, 6);
+                }
+                if (sb.length() > 0) {
+                    sb.append(' ');
+                }
+                sb.append(grid);
+            }
         }
-        if (hasRda) {
-            return String.format("RDA: %s, QSO by FT8CN", myRdaCode);
+        if (myRdaCode != null) {
+            String rda = myRdaCode.trim().toUpperCase();
+            if (!rda.isEmpty()) {
+                if (sb.length() > 0) {
+                    sb.append(' ');
+                }
+                sb.append("RDA: ").append(rda);
+            }
         }
-        return "QSO by FT8CN";
+        return sb.toString();
     }
 
     public void update(QSLRecord record) {
