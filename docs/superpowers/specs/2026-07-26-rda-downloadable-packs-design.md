@@ -15,3 +15,7 @@
 - [`RdaPackManager.java`](../../ft8cn/app/src/main/java/com/bg7yoz/ft8cn/rda/RdaPackManager.java)
 - [`RdaLookup.java`](../../ft8cn/app/src/main/java/com/bg7yoz/ft8cn/rda/RdaLookup.java)
 - Settings: секция RDA packs в Config
+
+## Tools
+
+Pack authors: https://github.com/cure76/ft8cn-rda-packs/tree/main/tools

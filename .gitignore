@@ -3,3 +3,9 @@ ft8CN/app/.gitignore 2
 ft8CN/.gitignore 2
 .FT8CN软件设计初衷及使用说明0.88版.pdf.icloud
 ft8CN/app/src/main/assets/.nightUSGS4Layer.sqlite.icloud
+
+# Local leftovers after moving RDA tools
+tools/rda/cache/
+tools/rda/out/
+tools/rda/.venv/
+tools/rda/__pycache__/

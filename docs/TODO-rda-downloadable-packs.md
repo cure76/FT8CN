@@ -20,9 +20,11 @@
 
 Локальная копия / публикация: репозиторий [`cure76/ft8cn-rda-packs`](https://github.com/cure76/ft8cn-rda-packs).
 
-Публикация каталога:
+Публикация каталога (в репозитории packs):
 
 ```bash
-python tools/rda/publish_catalog.py --packs-dir ../ft8cn-rda-packs \
-  --base-url 'https://cdn.jsdelivr.net/gh/cure76/ft8cn-rda-packs@main/'
+cd ft8cn-rda-packs/tools
+python publish_catalog.py
 ```
+
+См. https://github.com/cure76/ft8cn-rda-packs/tree/main/tools
