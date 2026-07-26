@@ -2189,6 +2189,9 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                 if (name.equalsIgnoreCase("gridAutoUpdateEnabled")) {
                     GeneralVariables.gridAutoUpdateEnabled = result.equals("1");
                 }
+                if (name.equalsIgnoreCase("txGridRdaAfterQso")) {
+                    GeneralVariables.txGridRdaAfterQso = result.equals("1");
+                }
                 if (name.equalsIgnoreCase("gridAutoUpdateIntervalMin")) {
                     try {
                         int min = Integer.parseInt(result);

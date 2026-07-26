@@ -24,6 +24,7 @@
     <string name="headGrid">Grid square</string>
     <string name="pl_grid">Please enter Maidenhead grid</string>
     <string name="grid_autoupdate">Auto grid</string>
+    <string name="tx_grid_rda_after_qso">TX grid+RDA after QSO</string>
     <string name="decoding">Decoding…</string>
     <string name="send">TX</string>
     <string name="check">Check</string>

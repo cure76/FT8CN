@@ -39,6 +39,10 @@ public class FT8TransmitSignal {
 
     private boolean transmitFreeText = false;
     private String freeText = "FREE TEXT";
+    /** Built in doComplete; armed on resetToCQ for one post-QSO free-text TX. */
+    private String pendingPostQsoFreeText = null;
+    private boolean oneShotFreeTextActive = false;
+    private String oneShotFreeText = null;
 
     private final DatabaseOpr databaseOpr;//配置信息，和相关数据的数据库
     private TransmitCallsign toCallsign;//目标呼号
@@ -208,6 +212,7 @@ public class FT8TransmitSignal {
         // New target / new QSO attempt: drop previous location snapshot so it is
         // taken again on the first TX (see DoTransmitRunnable).
         clearQsoLocationSnapshot();
+        clearPostQsoFreeTextState();
 
         Log.d(TAG, "准备发射数据...");
         if (GeneralVariables.checkFun1(toMaidenheadGrid)) {
@@ -477,6 +482,9 @@ public class FT8TransmitSignal {
             audioTrack.release();
             audioTrack = null;
         }
+        if (oneShotFreeTextActive) {
+            finishPostQsoFreeTextAndGoToCq();
+        }
     }
 
     //当通联成功时的动作
@@ -552,6 +560,86 @@ public class FT8TransmitSignal {
                     , BaseRigOperation.getFrequencyAllInfo(GeneralVariables.band)));
         }
 
+        // Queue optional post-QSO free-text (armed later in resetToCQ, after RR73/73).
+        if (GeneralVariables.txGridRdaAfterQso) {
+            String text = buildPostQsoFreeText(myMaidenGridAtStart, myRdaAtStart);
+            if (text != null && !text.isEmpty()) {
+                pendingPostQsoFreeText = text;
+            }
+        }
+    }
+
+    /**
+     * Build FT8 free-text ≤13 from QSO-start snapshot. Requires 6-char grid.
+     * Example: {@code KO85EO MO-84} or {@code KO85EO}.
+     */
+    static String buildPostQsoFreeText(String grid, String rda) {
+        if (grid == null) {
+            return "";
+        }
+        String g = grid.trim().toUpperCase();
+        if (g.length() < 6) {
+            return "";
+        }
+        if (g.length() > 6) {
+            g = g.substring(0, 6);
+        }
+        if (rda != null) {
+            String r = rda.trim().toUpperCase();
+            if (!r.isEmpty()) {
+                String withRda = g + " " + r;
+                if (withRda.length() <= 13) {
+                    return withRda;
+                }
+            }
+        }
+        return g;
+    }
+
+    private void clearPostQsoFreeTextState() {
+        pendingPostQsoFreeText = null;
+        oneShotFreeTextActive = false;
+        oneShotFreeText = null;
+    }
+
+    /**
+     * Arm one free-text TX from pendingPostQsoFreeText. Returns true if armed
+     * (caller should not enter CQ yet).
+     */
+    private boolean tryArmPostQsoFreeText() {
+        if (!GeneralVariables.txGridRdaAfterQso || !activated || transmitFreeText) {
+            pendingPostQsoFreeText = null;
+            return false;
+        }
+        if (pendingPostQsoFreeText == null || pendingPostQsoFreeText.isEmpty()) {
+            return false;
+        }
+        oneShotFreeText = pendingPostQsoFreeText;
+        pendingPostQsoFreeText = null;
+        oneShotFreeTextActive = true;
+        Log.d(TAG, "Armed post-QSO free text: " + oneShotFreeText);
+        return true;
+    }
+
+    private void finishPostQsoFreeTextAndGoToCq() {
+        oneShotFreeTextActive = false;
+        oneShotFreeText = null;
+        resetTargetReport();
+        if (toCallsign == null) {
+            int i3 = GenerateFT8.checkI3ByCallsign(GeneralVariables.myCallsign);
+            setTransmit(new TransmitCallsign(i3, 0, "CQ", (UtcTimer.getNowSequential() + 1) % 2)
+                    , 6, "");
+        } else {
+            functionOrder = 6;
+            toCallsign.callsign = "CQ";
+            mutableToCallsign.postValue(toCallsign);
+            generateFun();
+            mutableFunctionOrder.postValue(functionOrder);
+        }
+    }
+
+    public boolean isOneShotFreeTextActive() {
+        return oneShotFreeTextActive;
     }
 
     /**
@@ -831,6 +919,11 @@ public class FT8TransmitSignal {
         }
         if (msgList.size() == 0) return;//没有消息解析，返回
 
+        // Do not advance QSO state machine while a post-QSO free-text slot is armed.
+        if (oneShotFreeTextActive) {
+            return;
+        }
+
         if (msgList.get(0).getSequence() == sequential) {
             return;
         }
@@ -861,8 +954,14 @@ public class FT8TransmitSignal {
                 && (GeneralVariables.noReplyLimit == 0))//当呼叫无回应为“忽略”，且我是RR73(4)，那么无回应次数大于10次，就复位，防止RR73卡死
 
         ) {
-            //进入到CQ状态
+            //进入到CQ状态 — or arm one post-QSO free-text slot first
             resetToCQ();
+
+            if (oneShotFreeTextActive) {
+                // Skip follow/CQ until free-text TX finishes (afterPlayAudio → CQ).
+                mutableFunctionOrder.postValue(functionOrder);
+                return;
+            }
 
             //加入检查消息中有没有呼叫我的，或关注的呼号在CQ
             checkCQMeOrFollowCQMessage(messages);
@@ -966,6 +1065,7 @@ public class FT8TransmitSignal {
         this.activated = activated;
         if (!this.activated) {//强制关闭发射
             setTransmitting(false);
+            clearPostQsoFreeTextState();
         }
         mutableIsActivated.postValue(activated);
     }
@@ -1057,6 +1157,10 @@ public class FT8TransmitSignal {
     //@RequiresApi(api = Build.VERSION_CODES.N)
     public void resetToCQ() {
         resetTargetReport();
+        if (tryArmPostQsoFreeText()) {
+            // Stay on current sequential; next own slot TX is free text, then CQ.
+            return;
+        }
         if (toCallsign == null) {
             //要判断我的呼号类型，才能确定i3n3 !!!
             int i3 = GenerateFT8.checkI3ByCallsign(GeneralVariables.myCallsign);
@@ -1125,7 +1229,11 @@ public class FT8TransmitSignal {
 
             //用于显示将要发射的消息内容
             Ft8Message msg;
-            if (transmitSignal.transmitFreeText) {
+            if (transmitSignal.oneShotFreeTextActive && transmitSignal.oneShotFreeText != null) {
+                msg = new Ft8Message("CQ", GeneralVariables.myCallsign, transmitSignal.oneShotFreeText);
+                msg.i3 = 0;
+                msg.n3 = 0;
+            } else if (transmitSignal.transmitFreeText) {
                 msg = new Ft8Message("CQ", GeneralVariables.myCallsign, transmitSignal.freeText);
                 msg.i3 = 0;
                 msg.n3 = 0;

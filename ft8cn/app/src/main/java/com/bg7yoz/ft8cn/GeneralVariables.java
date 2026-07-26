@@ -155,6 +155,9 @@ public class GeneralVariables {
     public static boolean gridAutoUpdateEnabled = false;
     public static MutableLiveData<Boolean> mutableGridAutoUpdateEnabled = new MutableLiveData<>();
 
+    /** After a completed QSO, TX one free-text slot with 6-char grid + optional RDA. */
+    public static boolean txGridRdaAfterQso = false;
+
     /** Last GPS fix while Auto grid is on (for RDA snapshot / UI). */
     public static boolean hasLastKnownLocation = false;
     public static double lastKnownLatitude = 0;

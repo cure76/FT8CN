@@ -1109,6 +1109,16 @@ public class ConfigFragment extends Fragment {
             }
         });
 
+        binding.txGridRdaAfterQsoSwitch.setOnCheckedChangeListener(null);
+        binding.txGridRdaAfterQsoSwitch.setChecked(GeneralVariables.txGridRdaAfterQso);
+        binding.txGridRdaAfterQsoSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                GeneralVariables.txGridRdaAfterQso = isChecked;
+                writeConfig("txGridRdaAfterQso", isChecked ? "1" : "0");
+            }
+        });
+
         // Keep grid field in sync when GPS tracking updates the locator
         GeneralVariables.mutableMyMaidenheadGrid.observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
