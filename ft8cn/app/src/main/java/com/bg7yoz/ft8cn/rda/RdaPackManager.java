@@ -29,9 +29,9 @@ import java.util.Locale;
 public final class RdaPackManager {
     private static final String TAG = "RdaPackManager";
 
-    /** Hosted under FT8CN/rda-packs (jsDelivr CDN over GitHub). */
+    /** Dedicated packs repo via jsDelivr. */
     public static final String DEFAULT_CATALOG_URL =
-            "https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/catalog.json";
+            "https://cdn.jsdelivr.net/gh/cure76/ft8cn-rda-packs@main/catalog.json";
 
     public static final int MAX_DOWNLOADED_PACKS = 3;
     private static final String LOCAL_INDEX = "local_index.json";

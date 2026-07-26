@@ -5,7 +5,7 @@
 
 ## Решения
 
-- Каталог и GeoJSON: `rda-packs/` в репозитории FT8CN (raw GitHub); зеркало под отдельный `ft8cn-rda-packs` подготовлено локально
+- Каталог и GeoJSON: репозиторий [`cure76/ft8cn-rda-packs`](https://github.com/cure76/ft8cn-rda-packs) (jsDelivr); зеркало `rda-packs/` в FT8CN
 - В APK: только `mo_moscow`
 - Max **3** downloaded packs; builtin не считается
 - SHA-256 обязателен; QSO lookup офлайн

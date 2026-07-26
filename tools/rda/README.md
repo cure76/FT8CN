@@ -10,11 +10,11 @@
 ## Каталог для приложения
 
 ```bash
-python tools/rda/publish_catalog.py --packs-dir rda-packs \
-  --base-url 'https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/'
+python tools/rda/publish_catalog.py --packs-dir ../ft8cn-rda-packs \
+  --base-url 'https://cdn.jsdelivr.net/gh/cure76/ft8cn-rda-packs@main/'
 ```
 
-Скопируйте готовый `.geojson` в `rda-packs/packs/`, затем пересоберите `catalog.json`.
+Скопируйте готовый `.geojson` в packs-репо `packs/`, затем пересоберите `catalog.json`. Зеркало в этом репо: `rda-packs/`.
 
 ## Запуск (Смоленская область)
 
