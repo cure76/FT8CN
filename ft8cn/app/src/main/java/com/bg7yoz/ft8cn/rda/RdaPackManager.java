@@ -31,7 +31,7 @@ public final class RdaPackManager {
 
     /** Dedicated packs repo via jsDelivr. */
     public static final String DEFAULT_CATALOG_URL =
-            "https://cdn.jsdelivr.net/gh/cure76/ft8cn-rda-packs@main/catalog.json";
+            "https://raw.githubusercontent.com/cure76/ft8cn-rda-packs/main/catalog.json";
 
     public static final int MAX_DOWNLOADED_PACKS = 3;
     private static final String LOCAL_INDEX = "local_index.json";
