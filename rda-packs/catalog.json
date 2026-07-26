@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "base_url": "https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/",
+  "base_url": "https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/",
   "max_downloaded_packs": 3,
   "packs": [
     {

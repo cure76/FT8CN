@@ -14,11 +14,11 @@ Built-in APK pack: Moscow + Moscow Oblast (`mo_moscow`). App allows max **3** ad
 
 Default catalog URL:
 
-`https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/catalog.json`
+`https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/catalog.json`
 
 ## Publish
 
 ```bash
 python tools/rda/publish_catalog.py --packs-dir rda-packs \
-  --base-url 'https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/'
+  --base-url 'https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/'
 ```

@@ -11,7 +11,7 @@
 ## Как работает
 
 1. Каталог: [`rda-packs/catalog.json`](../../rda-packs/catalog.json) в этом репозитории  
-   URL: `https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/catalog.json`
+   URL: `https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/catalog.json`
 2. В APK вшит только `mo_moscow` (`assets/rda/`).
 3. Settings → **RDA packs**: Refresh / Download / Delete; лимит **3** скачанных пакета.
 4. Файлы в `filesDir/rda/` + `local_index.json`; SHA-256 из каталога.
@@ -23,5 +23,5 @@
 
 ```bash
 python tools/rda/publish_catalog.py --packs-dir rda-packs \
-  --base-url 'https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/'
+  --base-url 'https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/'
 ```

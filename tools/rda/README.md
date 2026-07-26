@@ -11,7 +11,7 @@
 
 ```bash
 python tools/rda/publish_catalog.py --packs-dir rda-packs \
-  --base-url 'https://raw.githubusercontent.com/cure76/FT8CN/release/rda-packs/'
+  --base-url 'https://cdn.jsdelivr.net/gh/cure76/FT8CN@release/rda-packs/'
 ```
 
 Скопируйте готовый `.geojson` в `rda-packs/packs/`, затем пересоберите `catalog.json`.
