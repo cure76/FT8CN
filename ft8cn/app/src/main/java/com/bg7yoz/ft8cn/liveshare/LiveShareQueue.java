@@ -4,11 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-enum LiveShareEventType {
-    POSITION,
-    QSO
-}
-
 public final class LiveShareQueue {
     private static final int BATCH_SIZE = 20;
 

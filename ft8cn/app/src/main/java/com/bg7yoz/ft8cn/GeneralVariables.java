@@ -16,6 +16,7 @@ import com.bg7yoz.ft8cn.database.ControlMode;
 import com.bg7yoz.ft8cn.database.DatabaseOpr;
 import com.bg7yoz.ft8cn.ft8transmit.QslRecordList;
 import com.bg7yoz.ft8cn.html.HtmlContext;
+import com.bg7yoz.ft8cn.liveshare.LiveShareController;
 import com.bg7yoz.ft8cn.rigs.BaseRigOperation;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 
@@ -181,6 +182,7 @@ public class GeneralVariables {
         lastKnownLongitude = longitude;
         hasLastKnownLocation = true;
         refreshCurrentRda();
+        LiveShareController.get().onLocation(latitude, longitude);
     }
 
     public static void clearLastKnownLocation() {
@@ -212,6 +214,7 @@ public class GeneralVariables {
         }
         currentMyRdaCode = code;
         mutableMyRdaCode.postValue(code);
+        LiveShareController.get().onGridOrRdaChanged(getMyMaidenheadGrid(), code);
     }
 
     public static int connectMode = ConnectMode.USB_CABLE;//连接方式USB==0,BLUE_TOOTH==1
@@ -286,6 +289,7 @@ public class GeneralVariables {
     public static void setMyMaidenheadGrid(String grid) {
         myMaidenheadGrid = grid;
         mutableMyMaidenheadGrid.postValue(grid);
+        LiveShareController.get().onGridOrRdaChanged(grid, currentMyRdaCode);
     }
 
     public static String getMyMaidenheadGrid() {
@@ -299,6 +303,8 @@ public class GeneralVariables {
     public static void setBaseFrequency(float baseFrequency) {
         mutableBaseFrequency.postValue(baseFrequency);
         GeneralVariables.baseFrequency = baseFrequency;
+        LiveShareController.get().onFrequencyHz(
+                band + Math.round(baseFrequency));
     }
 
     public static String getCloudlogServerAddress() {

@@ -60,6 +60,7 @@ import com.bg7yoz.ft8cn.ft8transmit.OnDoTransmitted;
 import com.bg7yoz.ft8cn.ft8transmit.OnTransmitSuccess;
 import com.bg7yoz.ft8cn.html.LogHttpServer;
 import com.bg7yoz.ft8cn.icom.WifiRig;
+import com.bg7yoz.ft8cn.liveshare.LiveShareController;
 import com.bg7yoz.ft8cn.log.QSLCallsignRecord;
 import com.bg7yoz.ft8cn.log.QSLRecord;
 import com.bg7yoz.ft8cn.log.SWLQsoList;
@@ -261,6 +262,7 @@ public class MainViewModel extends ViewModel {
         //获取配置信息。
         databaseOpr = DatabaseOpr.getInstance(GeneralVariables.getMainContext()
                 , "data.db");
+        LiveShareController.get().initialize(databaseOpr.getDb());
         mutableIsDecoding.postValue(false);//解码状态
         //创录音对象
         hamRecorder = new HamRecorder(null);
@@ -467,6 +469,10 @@ public class MainViewModel extends ViewModel {
                     public void run() {
                         if (GeneralVariables.enableCloudlog){
                             ThirdPartyService.UploadToCloudLog(qslRecord);
+                        }
+                        if (GeneralVariables.enableLiveShare
+                                && GeneralVariables.liveShareSharing) {
+                            LiveShareController.get().onQsoCompleted(qslRecord);
                         }
                         if (GeneralVariables.enableQRZ){
                             ThirdPartyService.UploadToQRZ(qslRecord);
