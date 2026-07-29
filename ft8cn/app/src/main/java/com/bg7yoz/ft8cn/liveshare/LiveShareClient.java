@@ -115,16 +115,18 @@ public final class LiveShareClient {
             }
 
             int code = connection.getResponseCode();
-            if (code < 200 || code >= 300) {
-                String response = readSnippet(connection.getErrorStream());
-                throw new IOException(
-                        "Live share HTTP " + code + (response.isEmpty() ? "" : ": " + response));
-            }
+            throwForHttpError(code, readSnippet(connection.getErrorStream()));
             drain(connection.getInputStream());
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    static void throwForHttpError(int code, String body) throws LiveShareHttpException {
+        if (code < 200 || code >= 300) {
+            throw new LiveShareHttpException(code, body);
         }
     }
 

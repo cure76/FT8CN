@@ -871,7 +871,7 @@ public class ConfigFragment extends Fragment {
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                         GeneralVariables.bandListIndex = i;
-                        GeneralVariables.band = OperationBand.getBandFreq(i);//把当前的频段保存下来
+                        GeneralVariables.setBand(OperationBand.getBandFreq(i));//把当前的频段保存下来
 
                         mainViewModel.databaseOpr.getAllQSLCallsigns();//通联成功的呼号读出来
                         writeConfig("bandFreq", String.valueOf(GeneralVariables.band));

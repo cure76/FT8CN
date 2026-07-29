@@ -108,7 +108,7 @@ public class FreqDialog extends Dialog {
                @Override
                public void onClick(View view) {
                    GeneralVariables.bandListIndex = OperationBand.getIndexByFreq(holder.band);
-                   GeneralVariables.band = holder.band;
+                   GeneralVariables.setBand(holder.band);
 
                    mainViewModel.databaseOpr.getAllQSLCallsigns();//通联成功的呼号读出来
                    mainViewModel.databaseOpr.writeConfig("bandFreq"

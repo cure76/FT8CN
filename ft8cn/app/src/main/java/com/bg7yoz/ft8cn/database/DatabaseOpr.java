@@ -2113,7 +2113,8 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.baudRate = result.equals("") ? 19200 : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("bandFreq")) {
-                    GeneralVariables.band = result.equals("") ? 14074000 : Long.parseLong(result);
+                    GeneralVariables.setBand(
+                            result.equals("") ? 14074000 : Long.parseLong(result));
                     GeneralVariables.bandListIndex = OperationBand.getIndexByFreq(GeneralVariables.band);
                 }
 

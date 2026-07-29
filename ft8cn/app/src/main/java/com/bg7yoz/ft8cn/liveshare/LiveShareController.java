@@ -32,12 +32,12 @@ public final class LiveShareController {
 
     private final ExecutorService flushExecutor =
             Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "live-share-flush"));
+    private final LocationCadence locationCadence = new LocationCadence();
 
     private LiveShareQueue queue;
     private boolean stopping;
-    private long lastSentLocationAt;
-    private Double lastSentLatitude;
-    private Double lastSentLongitude;
+    private volatile boolean uploadsPaused;
+    private long lifecycleGeneration;
     private long frequencyHz;
 
     private LiveShareController() {
@@ -55,18 +55,26 @@ public final class LiveShareController {
     }
 
     public synchronized void start() {
+        if (stopping) {
+            postStatus("stopping");
+            return;
+        }
         if (!isConfigured() || queue == null) {
             postStatus("error");
             return;
         }
-        stopping = false;
+        lifecycleGeneration++;
+        uploadsPaused = false;
+        frequencyHz = GeneralVariables.band
+                + Math.round(GeneralVariables.getBaseFrequency());
         GeneralVariables.liveShareSharing = true;
         postStatus("sharing");
         enqueuePosition(
                 GeneralVariables.getMyMaidenheadGrid(),
                 GeneralVariables.currentMyRdaCode,
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLatitude : null,
-                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null);
+                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null,
+                false);
         flushExecutor.execute(this::flushQueue);
     }
 
@@ -75,6 +83,7 @@ public final class LiveShareController {
             return;
         }
         stopping = true;
+        final long stopGeneration = ++lifecycleGeneration;
         postStatus("stopping");
         flushExecutor.execute(() -> {
             boolean stopped = false;
@@ -86,14 +95,18 @@ public final class LiveShareController {
                         GeneralVariables.getLiveShareApiKey(),
                         GeneralVariables.getLiveShareSessionToken());
                 stopped = true;
-            } catch (IOException ignored) {
-                postStatus("error");
+            } catch (IOException error) {
+                handleUploadFailure(error);
             } finally {
+                boolean completedCurrentStop = false;
                 synchronized (LiveShareController.this) {
-                    GeneralVariables.liveShareSharing = false;
-                    stopping = false;
+                    if (lifecycleGeneration == stopGeneration) {
+                        GeneralVariables.liveShareSharing = false;
+                        stopping = false;
+                        completedCurrentStop = true;
+                    }
                 }
-                if (stopped) {
+                if (stopped && completedCurrentStop) {
                     postStatus("idle");
                 }
             }
@@ -108,7 +121,8 @@ public final class LiveShareController {
                 grid,
                 rda,
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLatitude : null,
-                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null);
+                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null,
+                false);
     }
 
     public synchronized void onFrequencyHz(long freqHz) {
@@ -120,18 +134,21 @@ public final class LiveShareController {
                 GeneralVariables.getMyMaidenheadGrid(),
                 GeneralVariables.currentMyRdaCode,
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLatitude : null,
-                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null);
+                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null,
+                false);
     }
 
     public synchronized void onLocation(double lat, double lon) {
-        if (!isSharing() || !shouldSendLocation(lastSentLocationAt, System.currentTimeMillis())) {
+        long now = System.currentTimeMillis();
+        if (!isSharing() || !locationCadence.shouldSend(now, lat, lon)) {
             return;
         }
         enqueuePosition(
                 GeneralVariables.getMyMaidenheadGrid(),
                 GeneralVariables.currentMyRdaCode,
                 lat,
-                lon);
+                lon,
+                true);
     }
 
     public synchronized void onQsoCompleted(QSLRecord record) {
@@ -164,10 +181,6 @@ public final class LiveShareController {
         enqueue(LiveShareEventType.QSO, eventId, body);
     }
 
-    static boolean shouldSendLocation(long lastSentAt, long now) {
-        return lastSentAt == 0L || now - lastSentAt >= MIN_LOCATION_INTERVAL_MS;
-    }
-
     private boolean isSharing() {
         return GeneralVariables.enableLiveShare && GeneralVariables.liveShareSharing && !stopping
                 && queue != null;
@@ -185,7 +198,8 @@ public final class LiveShareController {
             String grid,
             String rda,
             Double lat,
-            Double lon) {
+            Double lon,
+            boolean gpsPosition) {
         if (blank(grid)) {
             return;
         }
@@ -199,9 +213,7 @@ public final class LiveShareController {
                 asFrequencyHz(frequencyHz),
                 LiveShareJson.isoUtc(now),
                 eventId);
-        lastSentLocationAt = now;
-        lastSentLatitude = lat;
-        lastSentLongitude = lon;
+        locationCadence.recordSent(now, lat, lon, gpsPosition);
         enqueue(LiveShareEventType.POSITION, eventId, body);
     }
 
@@ -212,7 +224,8 @@ public final class LiveShareController {
     }
 
     private void flushQueue() {
-        if (queue == null || !GeneralVariables.liveShareSharing || !isConfigured()) {
+        if (queue == null || uploadsPaused
+                || !GeneralVariables.liveShareSharing || !isConfigured()) {
             return;
         }
         try {
@@ -238,9 +251,35 @@ public final class LiveShareController {
                 }
             });
             postStatus("sharing (" + pending + ")");
-        } catch (IOException ignored) {
-            postStatus("error");
+        } catch (IOException error) {
+            handleUploadFailure(error);
         }
+    }
+
+    private void handleUploadFailure(IOException error) {
+        if (error instanceof LiveShareHttpException) {
+            int code = ((LiveShareHttpException) error).getCode();
+            String terminalStatus = terminalStatusForHttpCode(code);
+            if (terminalStatus != null) {
+                uploadsPaused = true;
+                if (code != 401) {
+                    GeneralVariables.liveShareSharing = false;
+                }
+                postStatus(terminalStatus);
+                return;
+            }
+        }
+        postStatus("error");
+    }
+
+    static String terminalStatusForHttpCode(int code) {
+        if (code == 401) {
+            return "error: authentication failed";
+        }
+        if (code == 404 || code == 409 || code == 410) {
+            return "error: session unavailable (" + code + ")";
+        }
+        return null;
     }
 
     private static JSONArray jsonArray(java.util.List<String> bodies) throws IOException {
@@ -292,5 +331,54 @@ public final class LiveShareController {
 
     private static void postStatus(String status) {
         GeneralVariables.mutableLiveShareStatus.postValue(status);
+    }
+
+    static final class LocationCadence {
+        private long lastSentAt;
+        private Double lastLatitude;
+        private Double lastLongitude;
+
+        boolean shouldSend(long now, double latitude, double longitude) {
+            if (lastSentAt == 0L) {
+                return true;
+            }
+            long elapsed = now - lastSentAt;
+            if (elapsed < MIN_LOCATION_INTERVAL_MS) {
+                return false;
+            }
+            return distanceMeters(lastLatitude, lastLongitude, latitude, longitude) >= 100.0
+                    || elapsed >= MIN_LOCATION_INTERVAL_MS;
+        }
+
+        void recordSent(
+                long now,
+                Double latitude,
+                Double longitude,
+                boolean gpsPosition) {
+            if (!gpsPosition || latitude == null || longitude == null) {
+                return;
+            }
+            lastSentAt = now;
+            lastLatitude = latitude;
+            lastLongitude = longitude;
+        }
+
+        private static double distanceMeters(
+                Double fromLatitude,
+                Double fromLongitude,
+                double toLatitude,
+                double toLongitude) {
+            if (fromLatitude == null || fromLongitude == null) {
+                return Double.POSITIVE_INFINITY;
+            }
+            double latitudeDelta = Math.toRadians(toLatitude - fromLatitude);
+            double longitudeDelta = Math.toRadians(toLongitude - fromLongitude);
+            double fromRadians = Math.toRadians(fromLatitude);
+            double toRadians = Math.toRadians(toLatitude);
+            double a = Math.sin(latitudeDelta / 2.0) * Math.sin(latitudeDelta / 2.0)
+                    + Math.cos(fromRadians) * Math.cos(toRadians)
+                    * Math.sin(longitudeDelta / 2.0) * Math.sin(longitudeDelta / 2.0);
+            return 6_371_000.0 * 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+        }
     }
 }

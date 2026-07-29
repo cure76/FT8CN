@@ -307,6 +307,12 @@ public class GeneralVariables {
                 band + Math.round(baseFrequency));
     }
 
+    public static void setBand(long band) {
+        GeneralVariables.band = band;
+        LiveShareController.get().onFrequencyHz(
+                band + Math.round(baseFrequency));
+    }
+
     public static String getCloudlogServerAddress() {
         return cloudlogServerAddress;
     }

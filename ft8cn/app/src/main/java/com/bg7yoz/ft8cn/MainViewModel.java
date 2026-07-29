@@ -189,7 +189,7 @@ public class MainViewModel extends ViewModel {
             ToastMessage.show(String.format(getStringFromResource(R.string.current_frequency)
                     , BaseRigOperation.getFrequencyAllInfo(freq)));
             //把频率的变化写回到全局变量中
-            GeneralVariables.band = freq;
+            GeneralVariables.setBand(freq);
             GeneralVariables.bandListIndex = OperationBand.getIndexByFreq(freq);
             GeneralVariables.mutableBandChange.postValue(GeneralVariables.bandListIndex);
 
