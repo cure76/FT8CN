@@ -36,6 +36,7 @@ import com.bg7yoz.ft8cn.database.OperationBand;
 import com.bg7yoz.ft8cn.database.RigNameList;
 import com.bg7yoz.ft8cn.databinding.FragmentConfigBinding;
 import com.bg7yoz.ft8cn.ft8signal.FT8Package;
+import com.bg7yoz.ft8cn.liveshare.LiveShareClient;
 import com.bg7yoz.ft8cn.log.ThirdPartyService;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.rda.RdaPackManager;
@@ -542,7 +543,7 @@ public class ConfigFragment extends Fragment {
         binding.cloudlogStationIdEdit.setText(GeneralVariables.getCloudlogStationID());
         binding.cloudlogStationIdEdit.addTextChangedListener(onCloudlogStationIDChanged);
 
-        // Live share configuration (network actions are implemented in later tasks)
+        // Live share configuration
         binding.liveShareApiBaseUrlEdit.removeTextChangedListener(onLiveShareApiBaseUrlChanged);
         binding.liveShareApiBaseUrlEdit.setText(GeneralVariables.getLiveShareApiBaseUrl());
         binding.liveShareApiBaseUrlEdit.addTextChangedListener(onLiveShareApiBaseUrlChanged);
@@ -570,7 +571,40 @@ public class ConfigFragment extends Fragment {
                     }
                 });
         updateLiveShareUrlPreview();
-        binding.testLiveShareButton.setEnabled(false);
+        binding.testLiveShareButton.setEnabled(true);
+        binding.testLiveShareButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final String apiBase = binding.liveShareApiBaseUrlEdit.getText().toString().trim();
+                binding.testLiveShareButton.setEnabled(false);
+                binding.testLiveShareButton.setText(getString(R.string.testing));
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        boolean success;
+                        try {
+                            int code = LiveShareClient.health(apiBase);
+                            success = code >= 200 && code < 300;
+                        } catch (IOException e) {
+                            success = false;
+                        }
+                        final boolean testSucceeded = success;
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (binding == null || !isAdded()) {
+                                    return;
+                                }
+                                binding.testLiveShareButton.setEnabled(true);
+                                binding.testLiveShareButton.setText(getString(R.string.test));
+                                ToastMessage.show(getString(
+                                        testSucceeded ? R.string.pass : R.string.fail));
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
         binding.copyLiveShareUrlButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
