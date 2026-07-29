@@ -55,19 +55,62 @@ public final class LiveShareQueue {
                 ids.add(event.id);
             }
 
-            if (type == LiveShareEventType.POSITION) {
-                sink.sendPositions(bodies);
-            } else {
-                sink.sendQsos(bodies);
+            try {
+                send(type, sink, bodies);
+            } catch (LiveShareHttpException error) {
+                if (!isDroppableClientError(error.getCode())) {
+                    throw error;
+                }
+                flushIndividually(type, events, sink);
+                continue;
             }
             store.delete(ids);
         }
+    }
+
+    private void flushIndividually(
+            LiveShareEventType type,
+            List<Event> events,
+            LiveShareClientSink sink) throws IOException {
+        for (Event event : events) {
+            List<Long> id = java.util.Collections.singletonList(event.id);
+            try {
+                send(type, sink, java.util.Collections.singletonList(event.jsonBody));
+            } catch (LiveShareHttpException error) {
+                if (!isDroppableClientError(error.getCode())) {
+                    throw error;
+                }
+                store.delete(id);
+                sink.onDroppedClientPayload(error.getCode(), 1);
+                continue;
+            }
+            store.delete(id);
+        }
+    }
+
+    private static void send(
+            LiveShareEventType type,
+            LiveShareClientSink sink,
+            List<String> bodies) throws IOException {
+        if (type == LiveShareEventType.POSITION) {
+            sink.sendPositions(bodies);
+        } else {
+            sink.sendQsos(bodies);
+        }
+    }
+
+    private static boolean isDroppableClientError(int code) {
+        return code >= 400 && code < 500
+                && code != 401 && code != 404 && code != 409 && code != 410;
     }
 
     public interface LiveShareClientSink {
         void sendPositions(List<String> jsonBodies) throws IOException;
 
         void sendQsos(List<String> jsonBodies) throws IOException;
+
+        default void onDroppedClientPayload(int code, int eventCount) {
+        }
     }
 
     public interface Store {

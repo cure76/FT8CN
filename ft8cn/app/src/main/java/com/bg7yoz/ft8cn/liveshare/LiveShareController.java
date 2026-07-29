@@ -75,7 +75,7 @@ public final class LiveShareController {
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLatitude : null,
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null,
                 false);
-        flushExecutor.execute(this::flushQueue);
+        flushExecutor.execute(this::flushQueueBestEffort);
     }
 
     public synchronized void stop() {
@@ -88,15 +88,14 @@ public final class LiveShareController {
         flushExecutor.execute(() -> {
             boolean stopped = false;
             try {
-                flushQueue();
-                LiveShareClient.stop(
-                        GeneralVariables.getLiveShareApiBaseUrl(),
-                        GeneralVariables.myCallsign,
-                        GeneralVariables.getLiveShareApiKey(),
-                        GeneralVariables.getLiveShareSessionToken());
-                stopped = true;
-            } catch (IOException error) {
-                handleUploadFailure(error);
+                stopped = flushBestEffortThenStop(
+                        this::flushQueue,
+                        () -> LiveShareClient.stop(
+                                GeneralVariables.getLiveShareApiBaseUrl(),
+                                GeneralVariables.myCallsign,
+                                GeneralVariables.getLiveShareApiKey(),
+                                GeneralVariables.getLiveShareSessionToken()),
+                        this::handleUploadFailure);
             } finally {
                 boolean completedCurrentStop = false;
                 synchronized (LiveShareController.this) {
@@ -220,39 +219,74 @@ public final class LiveShareController {
     private void enqueue(LiveShareEventType type, String eventId, JSONObject body) {
         queue.enqueue(type, eventId, body.toString());
         postStatus("sharing (" + queue.pendingCount() + ")");
-        flushExecutor.execute(this::flushQueue);
+        flushExecutor.execute(this::flushQueueBestEffort);
     }
 
-    private void flushQueue() {
+    private void flushQueue() throws IOException {
         if (queue == null || uploadsPaused
                 || !GeneralVariables.liveShareSharing || !isConfigured()) {
             return;
         }
-        try {
-            int pending = queue.flush(new LiveShareQueue.LiveShareClientSink() {
-                @Override
-                public void sendPositions(java.util.List<String> jsonBodies) throws IOException {
-                    LiveShareClient.postPositionBatch(
-                            GeneralVariables.getLiveShareApiBaseUrl(),
-                            GeneralVariables.myCallsign,
-                            GeneralVariables.getLiveShareApiKey(),
-                            GeneralVariables.getLiveShareSessionToken(),
-                            jsonArray(jsonBodies));
-                }
+        int[] droppedEvents = {0};
+        int[] droppedCode = {0};
+        int pending = queue.flush(new LiveShareQueue.LiveShareClientSink() {
+            @Override
+            public void sendPositions(java.util.List<String> jsonBodies) throws IOException {
+                LiveShareClient.postPositionBatch(
+                        GeneralVariables.getLiveShareApiBaseUrl(),
+                        GeneralVariables.myCallsign,
+                        GeneralVariables.getLiveShareApiKey(),
+                        GeneralVariables.getLiveShareSessionToken(),
+                        jsonArray(jsonBodies));
+            }
 
-                @Override
-                public void sendQsos(java.util.List<String> jsonBodies) throws IOException {
-                    LiveShareClient.postQsoBatch(
-                            GeneralVariables.getLiveShareApiBaseUrl(),
-                            GeneralVariables.myCallsign,
-                            GeneralVariables.getLiveShareApiKey(),
-                            GeneralVariables.getLiveShareSessionToken(),
-                            jsonArray(jsonBodies));
-                }
-            });
+            @Override
+            public void sendQsos(java.util.List<String> jsonBodies) throws IOException {
+                LiveShareClient.postQsoBatch(
+                        GeneralVariables.getLiveShareApiBaseUrl(),
+                        GeneralVariables.myCallsign,
+                        GeneralVariables.getLiveShareApiKey(),
+                        GeneralVariables.getLiveShareSessionToken(),
+                        jsonArray(jsonBodies));
+            }
+
+            @Override
+            public void onDroppedClientPayload(int code, int eventCount) {
+                droppedEvents[0] += eventCount;
+                droppedCode[0] = code;
+            }
+        });
+        if (droppedEvents[0] > 0) {
+            postStatus("sharing (" + pending + "); dropped " + droppedEvents[0]
+                    + " invalid event(s) (HTTP " + droppedCode[0] + ")");
+        } else {
             postStatus("sharing (" + pending + ")");
+        }
+    }
+
+    private void flushQueueBestEffort() {
+        try {
+            flushQueue();
         } catch (IOException error) {
             handleUploadFailure(error);
+        }
+    }
+
+    static boolean flushBestEffortThenStop(
+            IoAction flush,
+            IoAction stop,
+            UploadFailureHandler failureHandler) {
+        try {
+            flush.run();
+        } catch (IOException error) {
+            failureHandler.handle(error);
+        }
+        try {
+            stop.run();
+            return true;
+        } catch (IOException error) {
+            failureHandler.handle(error);
+            return false;
         }
     }
 
@@ -280,6 +314,14 @@ public final class LiveShareController {
             return "error: session unavailable (" + code + ")";
         }
         return null;
+    }
+
+    interface IoAction {
+        void run() throws IOException;
+    }
+
+    interface UploadFailureHandler {
+        void handle(IOException error);
     }
 
     private static JSONArray jsonArray(java.util.List<String> bodies) throws IOException {
