@@ -28,6 +28,10 @@
     <string name="rda_packs_title">RDA packs</string>
     <string name="rda_packs_builtin">Moscow + MO (built-in)</string>
     <string name="rda_packs_refresh">Refresh catalog</string>
+    <string name="rda_packs_manage">Manage packs…</string>
+    <string name="rda_packs_search_hint">Search packs</string>
+    <string name="rda_packs_downloaded_summary">Downloaded: %1$d/%2$d</string>
+    <string name="rda_packs_downloaded_none">none</string>
     <string name="rda_packs_limit_hint">Max 3 downloaded packs (built-in not counted)</string>
     <string name="rda_packs_download">Download</string>
     <string name="rda_packs_delete">Delete</string>
@@ -39,6 +43,7 @@
     <string name="rda_packs_download_fail">Download failed: %1$s</string>
     <string name="rda_packs_catalog_fail">Catalog refresh failed: %1$s</string>
     <string name="rda_packs_size_kb">%1$d KB</string>
+    <string name="rda_packs_empty_filter">No packs match the search</string>
     <string name="decoding">Decoding…</string>
     <string name="send">TX</string>
     <string name="check">Check</string>

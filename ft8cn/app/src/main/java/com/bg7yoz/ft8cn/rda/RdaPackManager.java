@@ -29,7 +29,7 @@ import java.util.Locale;
 public final class RdaPackManager {
     private static final String TAG = "RdaPackManager";
 
-    /** Dedicated packs repo via jsDelivr. */
+    /** Packs catalog on GitHub (raw). */
     public static final String DEFAULT_CATALOG_URL =
             "https://raw.githubusercontent.com/cure76/ft8cn-rda-packs/main/catalog.json";
 
@@ -110,6 +110,7 @@ public final class RdaPackManager {
                 JSONObject o = arr.getJSONObject(i);
                 InstalledPack p = new InstalledPack();
                 p.id = o.optString("id", "");
+                p.name = o.optString("name", "");
                 p.file = o.optString("file", "");
                 p.sha256 = o.optString("sha256", "").toLowerCase(Locale.US);
                 p.packVersion = o.optInt("pack_version", 1);
@@ -194,6 +195,7 @@ public final class RdaPackManager {
         List<InstalledPack> list = getInstalled(app);
         InstalledPack entry = new InstalledPack();
         entry.id = pack.id;
+        entry.name = pack.name != null ? pack.name : "";
         entry.file = localName;
         entry.sha256 = digest.toLowerCase(Locale.US);
         entry.packVersion = pack.packVersion;
@@ -240,6 +242,9 @@ public final class RdaPackManager {
         for (InstalledPack p : packs) {
             JSONObject o = new JSONObject();
             o.put("id", p.id);
+            if (p.name != null && !p.name.isEmpty()) {
+                o.put("name", p.name);
+            }
             o.put("file", p.file);
             o.put("sha256", p.sha256);
             o.put("pack_version", p.packVersion);
@@ -423,10 +428,22 @@ public final class RdaPackManager {
 
     public static final class InstalledPack {
         public String id = "";
+        /** Display name from catalog at install time (may be empty for older installs). */
+        public String name = "";
         public String file = "";
         public String sha256 = "";
         public int packVersion = 1;
         public long installedAt;
+
+        public String displayName() {
+            if (name != null && !name.trim().isEmpty()) {
+                return name.trim();
+            }
+            if (id == null || id.isEmpty()) {
+                return "";
+            }
+            return id.replace('_', ' ');
+        }
     }
 
     public static final class PackLimitException extends Exception {
