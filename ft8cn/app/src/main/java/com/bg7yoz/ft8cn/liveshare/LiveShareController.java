@@ -274,7 +274,7 @@ public final class LiveShareController {
 
     static String terminalStatusForHttpCode(int code) {
         if (code == 401) {
-            return "error: authentication failed";
+            return "error: authentication failed; uploads paused";
         }
         if (code == 404 || code == 409 || code == 410) {
             return "error: session unavailable (" + code + ")";

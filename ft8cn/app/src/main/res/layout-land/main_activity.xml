@@ -33,8 +33,42 @@
             app:defaultNavHost="true"
             app:layout_constraintBottom_toTopOf="@+id/nav_view"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/utcProgressBar"
+            app:layout_constraintTop_toBottomOf="@+id/liveShareLayout"
             app:navGraph="@navigation/main_navigation" />
+
+        <LinearLayout
+            android:id="@+id/liveShareLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/utcProgressBar"
+            tools:visibility="visible">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/liveShareButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:text="@string/live_share_start" />
+
+            <TextView
+                android:id="@+id/liveShareStatusTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="@string/live_share_status_idle"
+                tools:text="Live share: queue: 3" />
+        </LinearLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/transmittingLayout"

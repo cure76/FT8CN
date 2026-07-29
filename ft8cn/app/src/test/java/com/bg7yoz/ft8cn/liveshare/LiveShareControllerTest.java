@@ -39,7 +39,7 @@ public class LiveShareControllerTest {
     @Test
     public void httpFailuresHaveRequiredTerminalBehavior() {
         assertEquals(
-                "error: authentication failed",
+                "error: authentication failed; uploads paused",
                 LiveShareController.terminalStatusForHttpCode(401));
         assertEquals(
                 "error: session unavailable (404)",

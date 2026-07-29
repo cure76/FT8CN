@@ -58,6 +58,8 @@ import com.bg7yoz.ft8cn.databinding.MainActivityBinding;
 import com.bg7yoz.ft8cn.floatview.FloatView;
 import com.bg7yoz.ft8cn.floatview.FloatViewButton;
 import com.bg7yoz.ft8cn.grid_tracker.GridTrackerMainActivity;
+import com.bg7yoz.ft8cn.liveshare.LiveShareController;
+import com.bg7yoz.ft8cn.liveshare.LiveShareUiState;
 import com.bg7yoz.ft8cn.log.ImportSharedLogs;
 import com.bg7yoz.ft8cn.log.OnShareLogEvents;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
@@ -84,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
 
     private MainActivityBinding binding;
     private FloatView floatView;
+    private boolean liveShareActionInFlight;
+    private String lastLiveShareNotifiedStatus;
 
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
 
@@ -254,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
         binding = MainActivityBinding.inflate(getLayoutInflater());
         binding.initDataLayout.setVisibility(View.VISIBLE);//显示LOG页面
         setContentView(binding.getRoot());
+        setupLiveShareControls();
 
         GeneralVariables.mutableGridAutoUpdateEnabled.observe(this, new Observer<Boolean>() {
             @Override
@@ -335,6 +340,8 @@ public class MainActivity extends AppCompatActivity {
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentContainerView);
         assert navHostFragment != null;//断言不为空
         navController = navHostFragment.getNavController();
+        navController.addOnDestinationChangedListener((controller, destination, arguments) ->
+                renderLiveShareStatus(GeneralVariables.mutableLiveShareStatus.getValue()));
 
         NavigationUI.setupWithNavController(binding.navView, navController);
         //此处增加回调是因为当APP主动navigation后，无法回到解码的界面
@@ -456,6 +463,85 @@ public class MainActivity extends AppCompatActivity {
             doReceiveShareFile(getIntent());
         }
 
+    }
+
+    private void setupLiveShareControls() {
+        binding.liveShareButton.setOnClickListener(view -> {
+            if (liveShareActionInFlight) {
+                return;
+            }
+            liveShareActionInFlight = true;
+            binding.liveShareButton.setEnabled(false);
+            if (GeneralVariables.liveShareSharing) {
+                LiveShareController.get().stop();
+            } else {
+                LiveShareController.get().start();
+            }
+        });
+        GeneralVariables.mutableLiveShareStatus.observe(this, this::renderLiveShareStatus);
+    }
+
+    private void renderLiveShareStatus(String controllerStatus) {
+        boolean visible = LiveShareUiState.hasVisibleControls(
+                GeneralVariables.enableLiveShare,
+                GeneralVariables.getLiveShareApiBaseUrl(),
+                GeneralVariables.getLiveShareApiKey(),
+                GeneralVariables.getLiveShareSessionToken());
+        binding.liveShareLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (!visible) {
+            return;
+        }
+
+        LiveShareUiState state =
+                LiveShareUiState.fromControllerStatus(controllerStatus);
+        liveShareActionInFlight = state.actionInFlight;
+        binding.liveShareButton.setEnabled(!liveShareActionInFlight);
+        binding.liveShareButton.setText(GeneralVariables.liveShareSharing
+                ? R.string.live_share_stop
+                : R.string.live_share_start);
+
+        int messageId;
+        switch (state.kind) {
+            case SHARING:
+                messageId = R.string.live_share_status_sharing;
+                binding.liveShareStatusTextView.setText(messageId);
+                break;
+            case QUEUE:
+                binding.liveShareStatusTextView.setText(
+                        getString(R.string.live_share_status_queue, state.queueCount));
+                break;
+            case STOPPING:
+                messageId = R.string.live_share_status_stopping;
+                binding.liveShareStatusTextView.setText(messageId);
+                break;
+            case UPLOADS_PAUSED:
+                messageId = R.string.live_share_status_uploads_paused;
+                binding.liveShareStatusTextView.setText(messageId);
+                break;
+            case SESSION_UNAVAILABLE:
+                binding.liveShareStatusTextView.setText(getString(
+                        R.string.live_share_status_session_unavailable,
+                        state.httpCode));
+                break;
+            case IDLE:
+                messageId = R.string.live_share_status_idle;
+                binding.liveShareStatusTextView.setText(messageId);
+                break;
+            case ERROR:
+            default:
+                messageId = R.string.live_share_status_error;
+                binding.liveShareStatusTextView.setText(messageId);
+                break;
+        }
+
+        if (state.shouldNotify) {
+            if (!controllerStatus.equals(lastLiveShareNotifiedStatus)) {
+                lastLiveShareNotifiedStatus = controllerStatus;
+                ToastMessage.show(binding.liveShareStatusTextView.getText().toString());
+            }
+        } else {
+            lastLiveShareNotifiedStatus = null;
+        }
     }
 
 
@@ -622,6 +708,8 @@ public class MainActivity extends AppCompatActivity {
                 mainViewModel.ft8TransmitSignal.setTimer_sec(GeneralVariables.transmitDelay);
                 // start periodic lastKnown-based grid auto-update if enabled
                 startGridAutoUpdateIfNeeded();
+                runOnUiThread(() -> renderLiveShareStatus(
+                        GeneralVariables.mutableLiveShareStatus.getValue()));
                 //如果呼号、网格为空，就进入设置界面
                 if (GeneralVariables.getMyMaidenheadGrid().equals("")
                         || GeneralVariables.myCallsign.equals("")) {
@@ -892,6 +980,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (binding != null) {
+            renderLiveShareStatus(GeneralVariables.mutableLiveShareStatus.getValue());
+        }
     }
 
     @Override

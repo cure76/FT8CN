@@ -569,6 +569,15 @@
     <string name="live_share_url">Share URL</string>
     <string name="live_share_copy_url">Copy share URL</string>
     <string name="live_share_url_copied">Share URL copied</string>
+    <string name="live_share_start">Start share</string>
+    <string name="live_share_stop">Stop share</string>
+    <string name="live_share_status_idle">Live share: idle</string>
+    <string name="live_share_status_sharing">Live share: sharing</string>
+    <string name="live_share_status_queue">Live share: queue: %1$d</string>
+    <string name="live_share_status_stopping">Live share: stopping…</string>
+    <string name="live_share_status_uploads_paused">Live share: uploads paused — check API key</string>
+    <string name="live_share_status_session_unavailable">Live share: session unavailable (%1$d)</string>
+    <string name="live_share_status_error">Live share: error</string>
     <string name="pass">Pass!</string>
     <string name="fail">Fail!</string>
     <string name="testing">Testing…</string>
