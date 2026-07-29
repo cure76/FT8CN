@@ -790,6 +790,194 @@
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/liveShareLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/editor_layout_style"
+                        android:padding="8dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/cloudlogLayout">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/live_share_settings"
+                                android:textColor="@color/text_view_color"
+                                android:textSize="14sp" />
+
+                            <Switch
+                                android:id="@+id/enableLiveShareSwitch"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/config_enable_live_share"
+                                android:textColor="@color/text_view_color"
+                                android:textSize="14sp"
+                                android:thumbTint="?attr/colorPrimary"
+                                android:trackTint="@color/button_start_color"
+                                tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="100dp"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/live_share_api_base_url"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="14sp" />
+
+                                <EditText
+                                    android:id="@+id/liveShareApiBaseUrlEdit"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/editor_style"
+                                    android:importantForAutofill="no"
+                                    android:inputType="textUri"
+                                    android:minHeight="36dp"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="16sp"
+                                    tools:ignore="TouchTargetSizeCheck" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="100dp"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/live_share_share_base_url"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="14sp" />
+
+                                <EditText
+                                    android:id="@+id/liveShareShareBaseUrlEdit"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/editor_style"
+                                    android:importantForAutofill="no"
+                                    android:inputType="textUri"
+                                    android:minHeight="36dp"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="16sp"
+                                    tools:ignore="TouchTargetSizeCheck" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="100dp"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/live_share_api_key"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="14sp" />
+
+                                <EditText
+                                    android:id="@+id/liveShareApiKeyEdit"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/editor_style"
+                                    android:importantForAutofill="no"
+                                    android:inputType="textPassword"
+                                    android:minHeight="36dp"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="16sp"
+                                    tools:ignore="TouchTargetSizeCheck" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="100dp"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/live_share_session_token"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="14sp" />
+
+                                <EditText
+                                    android:id="@+id/liveShareSessionTokenEdit"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/editor_style"
+                                    android:importantForAutofill="no"
+                                    android:inputType="textPassword"
+                                    android:minHeight="36dp"
+                                    android:textColor="@color/text_view_color"
+                                    android:textSize="16sp"
+                                    tools:ignore="TouchTargetSizeCheck" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/live_share_url"
+                                android:textColor="@color/text_view_color"
+                                android:textSize="14sp" />
+
+                            <TextView
+                                android:id="@+id/liveShareUrlPreviewText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/editor_style"
+                                android:minHeight="36dp"
+                                android:padding="6dp"
+                                android:textColor="@color/text_view_color"
+                                android:textIsSelectable="true"
+                                android:textSize="14sp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="end"
+                                android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/testLiveShareButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:enabled="false"
+                                    android:text="@string/test"
+                                    android:textSize="12sp" />
+
+                                <Button
+                                    android:id="@+id/copyLiveShareUrlButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/live_share_copy_url"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/qrzLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -798,7 +986,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.333"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/cloudlogLayout">
+                        app:layout_constraintTop_toBottomOf="@+id/liveShareLayout">
 
                         <TextView
                             android:id="@+id/qrzSettingsTextView"

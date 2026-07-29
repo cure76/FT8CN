@@ -2225,6 +2225,23 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.cloudlogStationID = result;
                 }
 
+                // Live share
+                if (name.equalsIgnoreCase("liveShareEnabled")) {
+                    GeneralVariables.enableLiveShare = result.equals("1");
+                }
+                if (name.equalsIgnoreCase("liveShareApiBaseUrl")) {
+                    GeneralVariables.liveShareApiBaseUrl = result;
+                }
+                if (name.equalsIgnoreCase("liveShareShareBaseUrl")) {
+                    GeneralVariables.liveShareShareBaseUrl = result;
+                }
+                if (name.equalsIgnoreCase("liveShareApiKey")) {
+                    GeneralVariables.liveShareApiKey = result;
+                }
+                if (name.equalsIgnoreCase("liveShareSessionToken")) {
+                    GeneralVariables.liveShareSessionToken = result;
+                }
+
                 //QRZ
                 if (name.equalsIgnoreCase("enableQRZ")) {
                     GeneralVariables.enableQRZ = result.equals("1");

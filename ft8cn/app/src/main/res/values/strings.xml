@@ -560,6 +560,15 @@
     <string name="test_cloudlog_config">TEST</string>
     <string name="cloudlog_station_id">Station ID</string>
     <string name="cloudlog_help">cloudlog_en.txt</string>
+    <string name="live_share_settings">Live share / FT8CN Tracker</string>
+    <string name="config_enable_live_share">Enable live share</string>
+    <string name="live_share_api_base_url">API base URL</string>
+    <string name="live_share_share_base_url">Share base URL</string>
+    <string name="live_share_api_key">API key</string>
+    <string name="live_share_session_token">Session token</string>
+    <string name="live_share_url">Share URL</string>
+    <string name="live_share_copy_url">Copy share URL</string>
+    <string name="live_share_url_copied">Share URL copied</string>
     <string name="pass">Pass!</string>
     <string name="fail">Fail!</string>
     <string name="testing">Testing…</string>

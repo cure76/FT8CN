@@ -6,6 +6,9 @@ package com.bg7yoz.ft8cn.ui;
  */
 
 import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -219,6 +222,72 @@ public class ConfigFragment extends Fragment {
         public void afterTextChanged(Editable editable) {
             GeneralVariables.cloudlogStationID = editable.toString();
             writeConfig("cloudlogStationID", GeneralVariables.getCloudlogStationID());
+        }
+    };
+
+    private final TextWatcher onLiveShareApiBaseUrlChanged = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            GeneralVariables.liveShareApiBaseUrl = editable.toString().trim();
+            writeConfig("liveShareApiBaseUrl", GeneralVariables.getLiveShareApiBaseUrl());
+        }
+    };
+
+    private final TextWatcher onLiveShareShareBaseUrlChanged = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            GeneralVariables.liveShareShareBaseUrl = editable.toString().trim();
+            writeConfig("liveShareShareBaseUrl", GeneralVariables.getLiveShareShareBaseUrl());
+            updateLiveShareUrlPreview();
+        }
+    };
+
+    private final TextWatcher onLiveShareApiKeyChanged = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            GeneralVariables.liveShareApiKey = editable.toString().trim();
+            writeConfig("liveShareApiKey", GeneralVariables.getLiveShareApiKey());
+        }
+    };
+
+    private final TextWatcher onLiveShareSessionTokenChanged = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            GeneralVariables.liveShareSessionToken = editable.toString().trim();
+            writeConfig("liveShareSessionToken", GeneralVariables.getLiveShareSessionToken());
+            updateLiveShareUrlPreview();
         }
     };
 
@@ -472,6 +541,47 @@ public class ConfigFragment extends Fragment {
         binding.cloudlogStationIdEdit.removeTextChangedListener(onCloudlogStationIDChanged);
         binding.cloudlogStationIdEdit.setText(GeneralVariables.getCloudlogStationID());
         binding.cloudlogStationIdEdit.addTextChangedListener(onCloudlogStationIDChanged);
+
+        // Live share configuration (network actions are implemented in later tasks)
+        binding.liveShareApiBaseUrlEdit.removeTextChangedListener(onLiveShareApiBaseUrlChanged);
+        binding.liveShareApiBaseUrlEdit.setText(GeneralVariables.getLiveShareApiBaseUrl());
+        binding.liveShareApiBaseUrlEdit.addTextChangedListener(onLiveShareApiBaseUrlChanged);
+
+        binding.liveShareShareBaseUrlEdit.removeTextChangedListener(onLiveShareShareBaseUrlChanged);
+        binding.liveShareShareBaseUrlEdit.setText(GeneralVariables.getLiveShareShareBaseUrl());
+        binding.liveShareShareBaseUrlEdit.addTextChangedListener(onLiveShareShareBaseUrlChanged);
+
+        binding.liveShareApiKeyEdit.removeTextChangedListener(onLiveShareApiKeyChanged);
+        binding.liveShareApiKeyEdit.setText(GeneralVariables.getLiveShareApiKey());
+        binding.liveShareApiKeyEdit.addTextChangedListener(onLiveShareApiKeyChanged);
+
+        binding.liveShareSessionTokenEdit.removeTextChangedListener(onLiveShareSessionTokenChanged);
+        binding.liveShareSessionTokenEdit.setText(GeneralVariables.getLiveShareSessionToken());
+        binding.liveShareSessionTokenEdit.addTextChangedListener(onLiveShareSessionTokenChanged);
+
+        binding.enableLiveShareSwitch.setOnCheckedChangeListener(null);
+        binding.enableLiveShareSwitch.setChecked(GeneralVariables.enableLiveShare);
+        binding.enableLiveShareSwitch.setOnCheckedChangeListener(
+                new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        GeneralVariables.enableLiveShare = isChecked;
+                        writeConfig("liveShareEnabled", isChecked ? "1" : "0");
+                    }
+                });
+        updateLiveShareUrlPreview();
+        binding.testLiveShareButton.setEnabled(false);
+        binding.copyLiveShareUrlButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ClipboardManager clipboard = (ClipboardManager) requireContext()
+                        .getSystemService(Context.CLIPBOARD_SERVICE);
+                clipboard.setPrimaryClip(ClipData.newPlainText(
+                        getString(R.string.live_share_url),
+                        binding.liveShareUrlPreviewText.getText()));
+                ToastMessage.show(getString(R.string.live_share_url_copied));
+            }
+        });
 
         // qrz相关配置
         binding.qrzApiKeyTextEdit.removeTextChangedListener(onQrzApiKeyChanged);
@@ -1413,6 +1523,18 @@ public class ConfigFragment extends Fragment {
         binding.rdaPacksSummaryText.setText(
                 getString(R.string.rda_packs_downloaded_summary, count, RdaPackManager.MAX_DOWNLOADED_PACKS)
                         + " — " + listPart);
+    }
+
+    private void updateLiveShareUrlPreview() {
+        if (binding == null) {
+            return;
+        }
+        String baseUrl = GeneralVariables.getLiveShareShareBaseUrl();
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        binding.liveShareUrlPreviewText.setText(
+                baseUrl + "/s/" + GeneralVariables.getLiveShareSessionToken());
     }
 
     private void writeConfig(String KeyName, String Value) {

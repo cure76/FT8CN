@@ -37,6 +37,7 @@ public class GeneralVariables {
     public static boolean saveSWLMessage = false;//保存解码消息开关
     public static boolean saveSWL_QSO = false;//保存解码消息消息中的QSO开关
     public static boolean enableCloudlog = false;//是否启用Cloudlog自动同步
+    public static boolean enableLiveShare = false;
     public static boolean enableQRZ = false;//是否启用qrz自动同步
 
     public static boolean deepDecodeMode = false;//是否开启深度解码
@@ -236,6 +237,14 @@ public class GeneralVariables {
     public static String cloudlogServerAddress = "";//cloudlog的服务器地址
     public static String cloudlogApiKey = "";//cloudlog的APIKEY
     public static String cloudlogStationID = "";//cloudlog的站点ID
+    public static String liveShareApiBaseUrl = "https://api.rn3aoe.ru";
+    public static String liveShareShareBaseUrl = "http://track.rn3aoe.ru";
+    public static String liveShareApiKey = "";
+    public static String liveShareSessionToken = "";
+    /** Runtime: uploading active after Start. */
+    public static volatile boolean liveShareSharing = false;
+    public static final MutableLiveData<String> mutableLiveShareStatus =
+            new MutableLiveData<>("idle");
     public static String qrzApiKey = ""; //qrz的key
     public static boolean synFrequency = false;//同频发射
     public static int transmitDelay = 500;//发射延迟时间，这个时间也是给上一个周期的解码时间
@@ -302,6 +311,22 @@ public class GeneralVariables {
 
     public static String getCloudlogServerApiKey() {
         return cloudlogApiKey;
+    }
+
+    public static String getLiveShareApiBaseUrl() {
+        return liveShareApiBaseUrl;
+    }
+
+    public static String getLiveShareShareBaseUrl() {
+        return liveShareShareBaseUrl;
+    }
+
+    public static String getLiveShareApiKey() {
+        return liveShareApiKey;
+    }
+
+    public static String getLiveShareSessionToken() {
+        return liveShareSessionToken;
     }
 
     public static String getQrzApiKey() {
