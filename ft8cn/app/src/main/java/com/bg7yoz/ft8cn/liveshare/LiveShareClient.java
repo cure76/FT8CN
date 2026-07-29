@@ -105,13 +105,13 @@ public final class LiveShareClient {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
 
-            if (body != null) {
-                byte[] json = body.toString().getBytes(StandardCharsets.UTF_8);
-                connection.setDoOutput(true);
-                connection.setFixedLengthStreamingMode(json.length);
-                try (OutputStream output = connection.getOutputStream()) {
-                    output.write(json);
-                }
+            byte[] json = body != null
+                    ? body.toString().getBytes(StandardCharsets.UTF_8)
+                    : "{}".getBytes(StandardCharsets.UTF_8);
+            connection.setDoOutput(true);
+            connection.setFixedLengthStreamingMode(json.length);
+            try (OutputStream output = connection.getOutputStream()) {
+                output.write(json);
             }
 
             int code = connection.getResponseCode();
@@ -120,6 +120,7 @@ public final class LiveShareClient {
                 throw new IOException(
                         "Live share HTTP " + code + (response.isEmpty() ? "" : ": " + response));
             }
+            drain(connection.getInputStream());
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -137,6 +138,18 @@ public final class LiveShareClient {
         connection.setConnectTimeout(TIMEOUT_MS);
         connection.setReadTimeout(TIMEOUT_MS);
         return connection;
+    }
+
+    private static void drain(InputStream stream) throws IOException {
+        if (stream == null) {
+            return;
+        }
+        try (InputStream in = stream) {
+            byte[] buffer = new byte[1024];
+            while (in.read(buffer) != -1) {
+                // discard
+            }
+        }
     }
 
     private static String readSnippet(InputStream stream) throws IOException {
