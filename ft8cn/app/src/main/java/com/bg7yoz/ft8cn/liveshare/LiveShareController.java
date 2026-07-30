@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +35,9 @@ public final class LiveShareController {
     private final ExecutorService flushExecutor =
             Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "live-share-flush"));
     private final LocationCadence locationCadence = new LocationCadence();
+    /** Dedup QSO uploads for the current Start→Stop share session. */
+    private final Set<String> sharedQsoEventIds = new HashSet<>();
+    private final Set<String> sharedQsoContactKeys = new HashSet<>();
 
     private LiveShareQueue queue;
     private boolean stopping;
@@ -65,6 +70,8 @@ public final class LiveShareController {
         }
         lifecycleGeneration++;
         uploadsPaused = false;
+        sharedQsoEventIds.clear();
+        sharedQsoContactKeys.clear();
         frequencyHz = GeneralVariables.band
                 + Math.round(GeneralVariables.getBaseFrequency());
         GeneralVariables.liveShareSharing = true;
@@ -102,6 +109,8 @@ public final class LiveShareController {
                     if (lifecycleGeneration == stopGeneration) {
                         GeneralVariables.liveShareSharing = false;
                         stopping = false;
+                        sharedQsoEventIds.clear();
+                        sharedQsoContactKeys.clear();
                         completedCurrentStop = true;
                     }
                 }
@@ -160,10 +169,12 @@ public final class LiveShareController {
         if (blank(myGrid)) {
             return;
         }
+        String eventId = clientEventIdForQso(record);
+        String contactKey = contactKeyForQso(record);
+        if (sharedQsoEventIds.contains(eventId) || sharedQsoContactKeys.contains(contactKey)) {
+            return;
+        }
         long qsoFrequency = record.getBandFreq() + Math.max(0, record.getWavFrequency());
-        String eventId = record.id >= 0
-                ? "qso-" + record.id
-                : "qso-" + UUID.randomUUID();
         String rda = rdaFromComment(record.getComment());
         JSONObject body = LiveShareJson.qso(
                 record.getToCallsign(),
@@ -177,7 +188,36 @@ public final class LiveShareController {
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLatitude : null,
                 GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null,
                 eventId);
+        sharedQsoEventIds.add(eventId);
+        sharedQsoContactKeys.add(contactKey);
         enqueue(LiveShareEventType.QSO, eventId, body);
+    }
+
+    /**
+     * Stable id so retries / repeated 73 completions hash to the same server row.
+     * Prefer DB row id when present; otherwise callsign + QSO start + band.
+     */
+    static String clientEventIdForQso(QSLRecord record) {
+        if (record.id >= 0) {
+            return "qso-" + record.id;
+        }
+        String call = record.getToCallsign() == null
+                ? ""
+                : record.getToCallsign().trim().toUpperCase(Locale.US);
+        String date = blankStatic(record.getQso_date()) ? "00000000" : record.getQso_date();
+        String timeOn = blankStatic(record.getTime_on()) ? "000000" : record.getTime_on();
+        return "qso-" + call + "-" + date + "-" + timeOn + "-" + record.getBandFreq();
+    }
+
+    static String contactKeyForQso(QSLRecord record) {
+        String call = record.getToCallsign() == null
+                ? ""
+                : record.getToCallsign().trim().toUpperCase(Locale.US);
+        return call + "|" + record.getBandFreq();
+    }
+
+    private static boolean blankStatic(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private boolean isSharing() {

@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.bg7yoz.ft8cn.log.QSLRecord;
+
 import org.junit.Test;
 
 public class LiveShareControllerTest {
@@ -51,5 +53,61 @@ public class LiveShareControllerTest {
                 "error: session unavailable (410)",
                 LiveShareController.terminalStatusForHttpCode(410));
         assertNull(LiveShareController.terminalStatusForHttpCode(500));
+    }
+
+    @Test
+    public void qsoClientEventIdIsStableWithoutDatabaseRowId() {
+        QSLRecord first = new QSLRecord(
+                1_700_000_000_000L,
+                1_700_000_015_000L,
+                "RN3AOE",
+                "KO85",
+                "ba5an",
+                "PM00",
+                -16,
+                -17,
+                "FT8",
+                21_074_000L,
+                681);
+        QSLRecord second = new QSLRecord(
+                1_700_000_000_000L,
+                1_700_000_075_000L,
+                "RN3AOE",
+                "KO85",
+                "BA5AN",
+                "PM00",
+                -16,
+                -17,
+                "FT8",
+                21_074_000L,
+                681);
+
+        String firstId = LiveShareController.clientEventIdForQso(first);
+        String secondId = LiveShareController.clientEventIdForQso(second);
+
+        assertEquals(firstId, secondId);
+        assertTrue(firstId.startsWith("qso-BA5AN-"));
+        assertFalse(firstId.contains("qso-" + java.util.UUID.randomUUID()));
+        assertEquals(
+                LiveShareController.contactKeyForQso(first),
+                LiveShareController.contactKeyForQso(second));
+    }
+
+    @Test
+    public void qsoClientEventIdUsesDatabaseRowWhenPresent() {
+        QSLRecord record = new QSLRecord(
+                1_700_000_000_000L,
+                1_700_000_015_000L,
+                "RN3AOE",
+                "KO85",
+                "R1ABC",
+                "KO86",
+                -10,
+                -12,
+                "FT8",
+                7_074_000L,
+                0);
+        record.id = 42L;
+        assertEquals("qso-42", LiveShareController.clientEventIdForQso(record));
     }
 }
