@@ -569,6 +569,13 @@
     <string name="live_share_url">Share URL</string>
     <string name="live_share_copy_url">Copy share URL</string>
     <string name="live_share_url_copied">Share URL copied</string>
+    <string name="live_share_new_session">New session (ad-hoc)</string>
+    <string name="live_share_new_session_hint">For planned activations, create the session in admin and paste the token. Ad-hoc creates a new session with the server default TTL.</string>
+    <string name="live_share_new_session_ok">New session created — Start share from the main screen when ready</string>
+    <string name="live_share_new_session_fail">Could not create session: %1$s</string>
+    <string name="live_share_new_session_need_config">Set API base URL, API key, and callsign first</string>
+    <string name="live_share_new_session_stop_confirm">Stop the current live share, then create a new session?</string>
+    <string name="live_share_new_session_creating">Creating…</string>
     <string name="live_share_start">Start share</string>
     <string name="live_share_stop">Stop share</string>
     <string name="live_share_status_idle">Live share: idle</string>

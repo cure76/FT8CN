@@ -953,11 +953,26 @@
                                 android:textIsSelectable="true"
                                 android:textSize="14sp" />
 
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/live_share_new_session_hint"
+                                android:textColor="@color/text_view_color"
+                                android:textSize="12sp" />
+
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:gravity="end"
                                 android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/newLiveShareSessionButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/live_share_new_session"
+                                    android:textSize="12sp" />
 
                                 <Button
                                     android:id="@+id/testLiveShareButton"

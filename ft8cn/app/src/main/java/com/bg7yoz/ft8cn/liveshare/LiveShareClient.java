@@ -79,6 +79,28 @@ public final class LiveShareClient {
         post(apiBase, callsign, apiKey, sessionPath(token, "/stop"), null);
     }
 
+    /**
+     * Creates a tracking session via {@code POST /api/v1/sessions}.
+     * Uses the server default TTL; returns the new share token and share URL.
+     */
+    public static SessionCreateResult createSession(
+            String apiBase,
+            String callsign,
+            String apiKey) throws IOException {
+        JSONObject response = postForJson(apiBase, callsign, apiKey, "/api/v1/sessions", null);
+        return parseCreateSessionResponse(response);
+    }
+
+    public static final class SessionCreateResult {
+        public final String token;
+        public final String shareUrl;
+
+        public SessionCreateResult(String token, String shareUrl) {
+            this.token = token;
+            this.shareUrl = shareUrl == null ? "" : shareUrl;
+        }
+    }
+
     private static JSONObject batchBody(JSONArray items) {
         try {
             return new JSONObject().put("items", items);
@@ -92,6 +114,15 @@ public final class LiveShareClient {
     }
 
     private static void post(
+            String apiBase,
+            String callsign,
+            String apiKey,
+            String path,
+            JSONObject body) throws IOException {
+        postForJson(apiBase, callsign, apiKey, path, body);
+    }
+
+    private static JSONObject postForJson(
             String apiBase,
             String callsign,
             String apiKey,
@@ -116,7 +147,15 @@ public final class LiveShareClient {
 
             int code = connection.getResponseCode();
             throwForHttpError(code, readSnippet(connection.getErrorStream()));
-            drain(connection.getInputStream());
+            String responseBody = readFully(connection.getInputStream());
+            if (responseBody == null || responseBody.trim().isEmpty()) {
+                return new JSONObject();
+            }
+            try {
+                return new JSONObject(responseBody);
+            } catch (JSONException e) {
+                throw new IOException("Live share invalid JSON response", e);
+            }
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -142,15 +181,18 @@ public final class LiveShareClient {
         return connection;
     }
 
-    private static void drain(InputStream stream) throws IOException {
+    private static String readFully(InputStream stream) throws IOException {
         if (stream == null) {
-            return;
+            return "";
         }
-        try (InputStream in = stream) {
-            byte[] buffer = new byte[1024];
-            while (in.read(buffer) != -1) {
-                // discard
+        try (BufferedReader reader =
+                     new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            StringBuilder response = new StringBuilder();
+            int next;
+            while ((next = reader.read()) != -1) {
+                response.append((char) next);
             }
+            return response.toString();
         }
     }
 
@@ -167,5 +209,16 @@ public final class LiveShareClient {
             }
             return response.toString();
         }
+    }
+
+    static SessionCreateResult parseCreateSessionResponse(JSONObject response) throws IOException {
+        if (response == null) {
+            throw new IOException("Live share create session: missing token in response");
+        }
+        String token = response.optString("token", "").trim();
+        if (token.isEmpty()) {
+            throw new IOException("Live share create session: missing token in response");
+        }
+        return new SessionCreateResult(token, response.optString("share_url", "").trim());
     }
 }

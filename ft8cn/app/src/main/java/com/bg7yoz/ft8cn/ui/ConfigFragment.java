@@ -6,9 +6,11 @@ package com.bg7yoz.ft8cn.ui;
  */
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,6 +39,8 @@ import com.bg7yoz.ft8cn.database.RigNameList;
 import com.bg7yoz.ft8cn.databinding.FragmentConfigBinding;
 import com.bg7yoz.ft8cn.ft8signal.FT8Package;
 import com.bg7yoz.ft8cn.liveshare.LiveShareClient;
+import com.bg7yoz.ft8cn.liveshare.LiveShareController;
+import com.bg7yoz.ft8cn.liveshare.LiveShareHttpException;
 import com.bg7yoz.ft8cn.log.ThirdPartyService;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.rda.RdaPackManager;
@@ -603,6 +607,13 @@ public class ConfigFragment extends Fragment {
                         });
                     }
                 }).start();
+            }
+        });
+        binding.newLiveShareSessionButton.setEnabled(true);
+        binding.newLiveShareSessionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onNewLiveShareSessionClick();
             }
         });
         binding.copyLiveShareUrlButton.setOnClickListener(new View.OnClickListener() {
@@ -1569,6 +1580,124 @@ public class ConfigFragment extends Fragment {
         }
         binding.liveShareUrlPreviewText.setText(
                 baseUrl + "/s/" + GeneralVariables.getLiveShareSessionToken());
+    }
+
+    private void onNewLiveShareSessionClick() {
+        if (binding == null) {
+            return;
+        }
+        final String apiBase = binding.liveShareApiBaseUrlEdit.getText().toString().trim();
+        final String apiKey = binding.liveShareApiKeyEdit.getText().toString().trim();
+        final String callsign = GeneralVariables.myCallsign == null
+                ? ""
+                : GeneralVariables.myCallsign.trim();
+        if (apiBase.isEmpty() || apiKey.isEmpty() || callsign.isEmpty()) {
+            ToastMessage.show(getString(R.string.live_share_new_session_need_config));
+            return;
+        }
+        if (GeneralVariables.liveShareSharing) {
+            new AlertDialog.Builder(requireContext())
+                    .setMessage(R.string.live_share_new_session_stop_confirm)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            setNewLiveShareSessionBusy(true);
+                            LiveShareController.get().stop();
+                            waitForLiveShareStopThenCreate(apiBase, callsign, apiKey, 0);
+                        }
+                    })
+                    .show();
+            return;
+        }
+        createLiveShareSessionAsync(apiBase, callsign, apiKey);
+    }
+
+    private void waitForLiveShareStopThenCreate(
+            final String apiBase,
+            final String callsign,
+            final String apiKey,
+            final int attempt) {
+        if (binding == null || !isAdded()) {
+            return;
+        }
+        if (!GeneralVariables.liveShareSharing) {
+            createLiveShareSessionAsync(apiBase, callsign, apiKey);
+            return;
+        }
+        if (attempt >= 75) { // ~15s at 200ms
+            setNewLiveShareSessionBusy(false);
+            ToastMessage.show(getString(
+                    R.string.live_share_new_session_fail, "stop timed out"));
+            return;
+        }
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                waitForLiveShareStopThenCreate(apiBase, callsign, apiKey, attempt + 1);
+            }
+        }, 200);
+    }
+
+    private void createLiveShareSessionAsync(
+            final String apiBase,
+            final String callsign,
+            final String apiKey) {
+        setNewLiveShareSessionBusy(true);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                LiveShareClient.SessionCreateResult result = null;
+                String errorMessage = null;
+                try {
+                    result = LiveShareClient.createSession(apiBase, callsign, apiKey);
+                } catch (LiveShareHttpException e) {
+                    errorMessage = "HTTP " + e.getCode();
+                    if (e.getBody() != null && !e.getBody().isEmpty()) {
+                        errorMessage += ": " + e.getBody();
+                    }
+                } catch (IOException e) {
+                    errorMessage = e.getMessage() == null ? "network error" : e.getMessage();
+                }
+                final LiveShareClient.SessionCreateResult created = result;
+                final String failure = errorMessage;
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (binding == null || !isAdded()) {
+                            return;
+                        }
+                        setNewLiveShareSessionBusy(false);
+                        if (failure != null || created == null) {
+                            ToastMessage.show(getString(
+                                    R.string.live_share_new_session_fail,
+                                    failure == null ? "unknown" : failure));
+                            return;
+                        }
+                        applyNewLiveShareSessionToken(created.token);
+                        ToastMessage.show(getString(R.string.live_share_new_session_ok));
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void applyNewLiveShareSessionToken(String token) {
+        GeneralVariables.liveShareSessionToken = token;
+        writeConfig("liveShareSessionToken", token);
+        binding.liveShareSessionTokenEdit.removeTextChangedListener(onLiveShareSessionTokenChanged);
+        binding.liveShareSessionTokenEdit.setText(token);
+        binding.liveShareSessionTokenEdit.addTextChangedListener(onLiveShareSessionTokenChanged);
+        updateLiveShareUrlPreview();
+    }
+
+    private void setNewLiveShareSessionBusy(boolean busy) {
+        if (binding == null) {
+            return;
+        }
+        binding.newLiveShareSessionButton.setEnabled(!busy);
+        binding.newLiveShareSessionButton.setText(getString(
+                busy ? R.string.live_share_new_session_creating : R.string.live_share_new_session));
     }
 
     private void writeConfig(String KeyName, String Value) {
