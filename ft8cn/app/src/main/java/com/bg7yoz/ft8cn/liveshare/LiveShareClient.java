@@ -79,6 +79,24 @@ public final class LiveShareClient {
         post(apiBase, callsign, apiKey, sessionPath(token, "/stop"), null);
     }
 
+    /** Resume a paused session: {@code POST .../sessions/{token}/resume}. */
+    public static void resume(
+            String apiBase,
+            String callsign,
+            String apiKey,
+            String token) throws IOException {
+        post(apiBase, callsign, apiKey, sessionPath(token, "/resume"), null);
+    }
+
+    /** Touch Online while sharing: {@code POST .../sessions/{token}/heartbeat}. */
+    public static void heartbeat(
+            String apiBase,
+            String callsign,
+            String apiKey,
+            String token) throws IOException {
+        post(apiBase, callsign, apiKey, sessionPath(token, "/heartbeat"), null);
+    }
+
     /**
      * Creates a tracking session via {@code POST /api/v1/sessions}.
      * Uses the server default TTL; returns the new share token and share URL.

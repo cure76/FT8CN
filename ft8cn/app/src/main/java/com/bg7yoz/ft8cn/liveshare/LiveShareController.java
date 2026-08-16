@@ -20,6 +20,9 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,12 +31,17 @@ import java.util.regex.Pattern;
  */
 public final class LiveShareController {
     private static final long MIN_LOCATION_INTERVAL_MS = 60_000L;
+    /** Keep Online within the tracker 5-minute window while Start share is on. */
+    static final long HEARTBEAT_INTERVAL_MS = 60_000L;
     private static final Pattern RDA_PATTERN =
             Pattern.compile("\\bRDA:\\s*([A-Za-z]{2}-\\d{1,3})\\b");
     private static final LiveShareController INSTANCE = new LiveShareController();
 
     private final ExecutorService flushExecutor =
             Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "live-share-flush"));
+    private final ScheduledExecutorService heartbeatExecutor =
+            Executors.newSingleThreadScheduledExecutor(
+                    runnable -> new Thread(runnable, "live-share-heartbeat"));
     private final LocationCadence locationCadence = new LocationCadence();
     /** Dedup QSO uploads for the current Start→Stop share session. */
     private final Set<String> sharedQsoEventIds = new HashSet<>();
@@ -44,6 +52,7 @@ public final class LiveShareController {
     private volatile boolean uploadsPaused;
     private long lifecycleGeneration;
     private long frequencyHz;
+    private ScheduledFuture<?> heartbeatFuture;
 
     private LiveShareController() {
     }
@@ -68,21 +77,51 @@ public final class LiveShareController {
             postStatus("error");
             return;
         }
-        lifecycleGeneration++;
+        final String token = GeneralVariables.getLiveShareSessionToken();
+        if (blank(token)) {
+            postStatus("error: session unavailable (no token)");
+            return;
+        }
+        final long startGeneration = ++lifecycleGeneration;
         uploadsPaused = false;
         sharedQsoEventIds.clear();
         sharedQsoContactKeys.clear();
         frequencyHz = GeneralVariables.band
                 + Math.round(GeneralVariables.getBaseFrequency());
-        GeneralVariables.liveShareSharing = true;
         postStatus("sharing");
-        enqueuePosition(
-                GeneralVariables.getMyMaidenheadGrid(),
-                GeneralVariables.currentMyRdaCode,
-                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLatitude : null,
-                GeneralVariables.hasLastKnownLocation ? GeneralVariables.lastKnownLongitude : null,
-                false);
-        flushExecutor.execute(this::flushQueueBestEffort);
+        flushExecutor.execute(() -> {
+            try {
+                LiveShareClient.resume(
+                        GeneralVariables.getLiveShareApiBaseUrl(),
+                        GeneralVariables.myCallsign,
+                        GeneralVariables.getLiveShareApiKey(),
+                        token);
+            } catch (IOException error) {
+                synchronized (LiveShareController.this) {
+                    if (lifecycleGeneration != startGeneration) {
+                        return;
+                    }
+                }
+                handleUploadFailure(error);
+                return;
+            }
+            synchronized (LiveShareController.this) {
+                if (lifecycleGeneration != startGeneration || stopping) {
+                    return;
+                }
+                GeneralVariables.liveShareSharing = true;
+                enqueuePosition(
+                        GeneralVariables.getMyMaidenheadGrid(),
+                        GeneralVariables.currentMyRdaCode,
+                        GeneralVariables.hasLastKnownLocation
+                                ? GeneralVariables.lastKnownLatitude : null,
+                        GeneralVariables.hasLastKnownLocation
+                                ? GeneralVariables.lastKnownLongitude : null,
+                        false);
+                startHeartbeatLocked();
+            }
+            flushQueueBestEffort();
+        });
     }
 
     public synchronized void stop() {
@@ -90,6 +129,7 @@ public final class LiveShareController {
             return;
         }
         stopping = true;
+        stopHeartbeatLocked();
         final long stopGeneration = ++lifecycleGeneration;
         postStatus("stopping");
         flushExecutor.execute(() -> {
@@ -111,6 +151,7 @@ public final class LiveShareController {
                         stopping = false;
                         sharedQsoEventIds.clear();
                         sharedQsoContactKeys.clear();
+                        // Keep session token so Start can POST .../resume.
                         completedCurrentStop = true;
                     }
                 }
@@ -119,6 +160,37 @@ public final class LiveShareController {
                 }
             }
         });
+    }
+
+    private void startHeartbeatLocked() {
+        stopHeartbeatLocked();
+        heartbeatFuture = heartbeatExecutor.scheduleAtFixedRate(
+                this::sendHeartbeatBestEffort,
+                HEARTBEAT_INTERVAL_MS,
+                HEARTBEAT_INTERVAL_MS,
+                TimeUnit.MILLISECONDS);
+    }
+
+    private void stopHeartbeatLocked() {
+        if (heartbeatFuture != null) {
+            heartbeatFuture.cancel(false);
+            heartbeatFuture = null;
+        }
+    }
+
+    private void sendHeartbeatBestEffort() {
+        if (!isSharing() || uploadsPaused) {
+            return;
+        }
+        try {
+            LiveShareClient.heartbeat(
+                    GeneralVariables.getLiveShareApiBaseUrl(),
+                    GeneralVariables.myCallsign,
+                    GeneralVariables.getLiveShareApiKey(),
+                    GeneralVariables.getLiveShareSessionToken());
+        } catch (IOException error) {
+            handleUploadFailure(error);
+        }
     }
 
     public synchronized void onGridOrRdaChanged(String grid, String rda) {
@@ -335,9 +407,12 @@ public final class LiveShareController {
             int code = ((LiveShareHttpException) error).getCode();
             String terminalStatus = terminalStatusForHttpCode(code);
             if (terminalStatus != null) {
-                uploadsPaused = true;
-                if (code != 401) {
-                    GeneralVariables.liveShareSharing = false;
+                synchronized (this) {
+                    uploadsPaused = true;
+                    if (code != 401) {
+                        GeneralVariables.liveShareSharing = false;
+                    }
+                    stopHeartbeatLocked();
                 }
                 postStatus(terminalStatus);
                 return;

@@ -6,7 +6,7 @@ Live share sends the operator’s current grid/RDA, optional GPS track, working 
 
 **Ad-hoc New session:** [`2026-07-30-ft8cn-new-session-design.md`](https://github.com/cure76/ft8cn-tracker/blob/main/docs/superpowers/specs/2026-07-30-ft8cn-new-session-design.md)
 
-**Pause / resume (same session):** [`2026-08-16-session-pause-resume-design.md`](https://github.com/cure76/ft8cn-tracker/blob/main/docs/superpowers/specs/2026-08-16-session-pause-resume-design.md) — Stop → server `paused` (token kept); Start → `POST …/resume`; New session still creates a new token.
+**Pause / resume (same session) + heartbeat:** [`2026-08-16-session-pause-resume-design.md`](https://github.com/cure76/ft8cn-tracker/blob/main/docs/superpowers/specs/2026-08-16-session-pause-resume-design.md), [`2026-08-16-session-heartbeat-design.md`](https://github.com/cure76/ft8cn-tracker/blob/main/docs/superpowers/specs/2026-08-16-session-heartbeat-design.md) — Stop → server `paused` (token kept); Start → `POST …/resume`; heartbeat ~60s while sharing.
 
 ---
 
@@ -28,7 +28,7 @@ Live share sends the operator’s current grid/RDA, optional GPS track, working 
 3. Use **Test** to call `GET {api}/health`.
 4. On the main screen: **Start share** / **Stop share** (visible when config is valid and Enable is on).
 
-While sharing, FT8CN sends positions (grid/RDA, GPS cadence, `freq_hz`) and completed QSOs. Offline events are queued locally and flushed in batches (≤20 items, positions before QSOs). **Stop** flushes the queue (best effort), calls `POST …/stop` (server → `paused`), turns sharing off locally, and **keeps** the session token. **Start** with a saved token calls `POST …/resume` (does not create a new session).
+While sharing, FT8CN sends positions (grid/RDA, GPS cadence, `freq_hz`) and completed QSOs. Offline events are queued locally and flushed in batches (≤20 items, positions before QSOs). **Stop** flushes the queue (best effort), calls `POST …/stop` (server → `paused`), turns sharing off locally, and **keeps** the session token. **Start** with a saved token calls `POST …/resume` (does not create a new session). While sharing, the app also sends `POST …/heartbeat` about every 60s so the map stays **Online** without new GPS/QSO.
 
 If **New session** is tapped while already sharing, the app confirms, stops the current share, then creates and saves the new token.
 
